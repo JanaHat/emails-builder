@@ -7,7 +7,7 @@ import mjml2html from 'mjml';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const templatesDir = path.join(__dirname, './campaignA/templates');
+const templatesDir = path.join(__dirname, './campaignB/templates');
 const outputDir = path.join(__dirname, '../../../output');
 
 if (!fs.existsSync(outputDir)) {
@@ -40,7 +40,7 @@ function buildEmails() {
                             const mjmlContent = generateEmail(data);
                             const { html } = mjml2html(mjmlContent);
 
-                            const emailOutputDir = path.join(outputDir, 'clientA', 'campaignA', variation);
+                            const emailOutputDir = path.join(outputDir, 'clientA', 'campaignB', variation);
                             if (!fs.existsSync(emailOutputDir)) {
                                 fs.mkdirSync(emailOutputDir, { recursive: true });
                             }

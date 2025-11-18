@@ -9,7 +9,7 @@ export const generateEmail = ({ userName, hasDiscount, discountCode }) => `
         </mj-style>
     </mj-head>
     <mj-body>
-        <mj-section ${hasDiscount ? 'class="dark-mode"' : ""}>
+        <mj-section background-color="#AFD2E9" ${hasDiscount ? 'css-class="dark-mode"' : ""}>
             <mj-column>
                 <mj-text>Hello ${userName},</mj-text>
                 <mj-text>We have a special offer for you!</mj-text>

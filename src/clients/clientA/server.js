@@ -15,6 +15,8 @@ const PORT = 3000;
 const outputDir = path.join(__dirname, '../../../output');
 
 server.use(express.static(path.join(__dirname, './ui')));
+server.use('/assets', express.static(path.join(__dirname, './campaignA/assets')));
+server.use('/assets', express.static(path.join(__dirname, './campaignB/assets')));
 
 server.get('/output/clientA', (req, res) => {
     // const { study } = req.params;

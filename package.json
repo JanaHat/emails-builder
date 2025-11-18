@@ -8,9 +8,18 @@
   "license": "ISC",
   "description": "mjml-emails",
   "scripts": {
-    "start-clientA": "nodemon src/clients/clientA/server.js",
-    "start-clientB": "nodemon src/clients/clientB/server.js",
-    "build-emails": "node buildEmails.js"
+    "start:clientA": "nodemon src/clients/clientA/server.js",
+    "start:clientB": "nodemon src/clients/clientB/server.js",
+    "build": "node src/buildEmails.js",
+    "build:clientA": "node src/buildEmails.js clientA",
+    "build:clientA:campaignA": "node src/buildEmails.js clientA campaignA",
+    "build:clientA:campaignB": "node src/buildEmails.js clientA campaignB",
+    "build:clientB": "node src/buildEmails.js clientB",
+    "build:all": "node src/buildEmails.js clientA && node src/buildEmails.js clientB",
+    "watch:clientA": "node src/devServer.js clientA",
+    "watch:clientB": "node src/devServer.js clientB",
+    "watch:all": "node src/devServer.js",
+    "new-template": "npm run create"
   },
   "dependencies": {
     "chokidar": "^4.0.3",

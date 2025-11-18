@@ -1,35 +1,50 @@
-import { Button } from "../../components/Button.js";
+export const generateEmail = ({
+    subject,
+    greeting,
+    paragraph1,
+    paragraph2,
+    paragraph3,
+    cta,
+    backgroundColor 
+}) => {
+    // Helper function to escape HTML content
+    const escapeHtml = (text) => {
+        if (!text) return '';
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/"/g, '&quot;')
+            .replace(/"/g, '&quot;');
+    };
 
-export const generateEmail = ({ userName, hasDiscount, discountCode }) => `
+    return `
 <mjml>
     <mj-head>
-        <mj-preview>Exclusive Offer Just for You!</mj-preview>
-        <mj-style inline="inline">
-        .dark-mode { background-color: #333 !important; color: white !important; }
-        </mj-style>
-        <mj-attributes>
-            <mj-body background-color="#AFD2E9"></mj-body>
-        </mj-attributes>
+        <mj-preview>${escapeHtml(subject)}</mj-preview>
     </mj-head>
     <mj-body>
-        <mj-section ${hasDiscount ? 'class="dark-mode"' : ""} background-color="#AFD2E9" style="min-height: 400px;">
+        <mj-section background-color="${backgroundColor}">
             <mj-column>
-                <mj-text font-size="20px" color="white">Hello ${userName},</mj-text>
-                <mj-text font-size="16px" color="white">We have a special offer for you!</mj-text>
-
-                ${
-                hasDiscount
-                    ? `<mj-text font-size="16px" color="white">Your discount code: <strong>${discountCode}</strong></mj-text>`
-                    : `<mj-text font-size="16px" color="white">No special discounts right now, but stay tuned!</mj-text>`
-                }
-                ${
-                    hasDiscount
-                    ? Button({ href: "https://yourwebsite.com", text: "Claim Offer" })
-                    : ""
-                }
-
+                <mj-image src="/assets/plant.webp" alt="Header Image" width="600px" />
+            </mj-column>
+        </mj-section>
+        <mj-section background-color="${backgroundColor}" padding="20px 25px">
+            <mj-column>
+                ${greeting ? `<mj-text font-size="20px" color="#333333">${escapeHtml(greeting)}</mj-text>` : ''}
+                ${paragraph1 ? `<mj-text font-size="16px" color="#666666">${escapeHtml(paragraph1)}</mj-text>` : ''}
+                ${paragraph2 ? `<mj-text font-size="16px" color="#666666">${escapeHtml(paragraph2)}</mj-text>` : ''}
+                ${paragraph3 ? `<mj-text font-size="16px" color="#666666">${escapeHtml(paragraph3)}</mj-text>` : ''}
+                ${cta ? `
+                <mj-button href="#" background-color="#28A745" align="left">
+                    ${escapeHtml(cta)}
+                </mj-button>
+                ` : ''}
             </mj-column>
         </mj-section>
     </mj-body>
 </mjml>
 `;
+};
