@@ -15,8 +15,7 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "express": "^4.21.2",
-    "html-minifier": "^4.0.0",
-    "mjml": "^4.15.3"
+    "mjml": "^5.0.0-alpha.8"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
