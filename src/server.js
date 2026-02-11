@@ -13,11 +13,19 @@ const projectRoot = path.resolve(__dirname, '..');
 const outputDir = path.join(projectRoot, config.global.outputDir);
 
 const uiPath = path.join(__dirname, 'shared', 'ui');
-server.use(express.static(uiPath));
+server.use(
+  express.static(uiPath, {
+    etag: false,
+    maxAge: 0,
+    setHeaders: (res) => {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+  })
+);
 
 const uiAssetsPath = path.join(__dirname, 'shared', 'ui', 'assets');
 if (fs.existsSync(uiAssetsPath)) {
-  server.use('/assets', express.static(uiAssetsPath));
+  server.use('/assets', express.static(uiAssetsPath, { etag: true, maxAge: '7d' }));
 }
 
 const allowedClients = new Set(getAllClients());
@@ -123,6 +131,8 @@ server.get('/output/:client/:campaign/:variation/:language', (req, res) => {
   }
 
   if (!fs.existsSync(outputPath)) return res.status(404).send('Email not found');
+
+  res.set('Cache-Control', 'public, max-age=30');
 
   res.sendFile(outputPath);
 });

@@ -1,7 +1,6 @@
 let currentClient = null;
 
-function updateIframeHeight() {
-    const iframe = document.getElementById('email-iframe');
+function updateIframeHeight(iframe) {
     if (!iframe) return;
 
     const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
@@ -14,6 +13,38 @@ function updateIframeHeight() {
     if (emailHeight > 0) {
         iframe.style.height = emailHeight + 'px';
     }
+}
+
+function syncIframeHeight(iframe) {
+    if (!iframe) return;
+
+    const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDocument) return;
+
+    updateIframeHeight(iframe);
+
+    const images = Array.from(iframeDocument.images || []);
+    images.forEach((img) => {
+        if (!img.complete) {
+            img.addEventListener('load', () => updateIframeHeight(iframe), { once: true });
+            img.addEventListener('error', () => updateIframeHeight(iframe), { once: true });
+        }
+    });
+
+    const start = performance.now();
+    const tick = () => {
+        updateIframeHeight(iframe);
+        if (performance.now() - start < 1000) {
+            requestAnimationFrame(tick);
+        }
+    };
+    requestAnimationFrame(tick);
+}
+
+function setPreviewLoading(isLoading) {
+    const preview = document.getElementById('email-preview');
+    if (!preview) return;
+    preview.classList.toggle('loading', isLoading);
 }
 
 function applyClientTheme(client) {
@@ -169,6 +200,7 @@ function viewSpecificEmail(campaign, variation, email, emailButton) {
         emailButton.classList.add('active-email');
     }
     const emailPreview = document.getElementById('email-preview');
+    setPreviewLoading(true);
     emailPreview.innerHTML = `
         <iframe id="email-iframe" src="/output/${currentClient}/${campaign}/${variation}/${email}"
             scrolling="no"
@@ -178,8 +210,9 @@ function viewSpecificEmail(campaign, variation, email, emailButton) {
     const iframe = document.getElementById('email-iframe');
     iframe.onload = () => {
         setTimeout(() => {
-            updateIframeHeight();
-        }, 100);
+            syncIframeHeight(iframe);
+            setPreviewLoading(false);
+        }, 50);
     };
 }
 
@@ -195,27 +228,27 @@ document.addEventListener('DOMContentLoaded', () => {
         emailWrapper.style.width = '275px';
         emailWrapper.style.height = 'auto';
         emailWrapper.style.overflow = 'hidden';
-        setTimeout(() => updateIframeHeight(), 100);
+        setTimeout(() => syncIframeHeight(document.getElementById('email-iframe')), 50);
     });
 
     mobileButtonS.addEventListener('click', () => {
         emailWrapper.style.width = '325px';
         emailWrapper.style.height = 'auto';
         emailWrapper.style.overflow = 'hidden';
-        setTimeout(() => updateIframeHeight(), 100);
+        setTimeout(() => syncIframeHeight(document.getElementById('email-iframe')), 50);
     });
 
     mobileButtonM.addEventListener('click', () => {
         emailWrapper.style.width = '375px';
         emailWrapper.style.height = 'auto';
         emailWrapper.style.overflow = 'hidden';
-        setTimeout(() => updateIframeHeight(), 100);
+        setTimeout(() => syncIframeHeight(document.getElementById('email-iframe')), 50);
     });
 
     desktopButton.addEventListener('click', () => {
         emailWrapper.style.width = '600px';
         emailWrapper.style.height = 'auto';
-        setTimeout(() => updateIframeHeight(), 100);
+        setTimeout(() => syncIframeHeight(document.getElementById('email-iframe')), 50);
     });
 });
 
