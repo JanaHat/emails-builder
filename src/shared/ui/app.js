@@ -1,41 +1,103 @@
+let currentClient = null;
+
+function updateIframeHeight() {
+    const iframe = document.getElementById('email-iframe');
+    if (!iframe) return;
+
+    const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDocument) return;
+
+    const emailHeight = Math.max(
+        iframeDocument.body?.scrollHeight || 0,
+        iframeDocument.documentElement?.scrollHeight || 0
+    );
+    if (emailHeight > 0) {
+        iframe.style.height = emailHeight + 'px';
+    }
+}
+
+function applyClientTheme(client) {
+    const isClientB = client === 'clientB';
+    document.body.classList.toggle('theme-clientB', isClientB);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-    const studiesList = document.getElementById('study-list');
+    const campaignsList = document.getElementById('campaign-list');
+    const clientSelect = document.getElementById('client-select');
+    const clientTitle = document.getElementById('client-title');
 
-    async function loadStudies() {
+    async function loadClients() {
         try {
-            const res = await fetch('/output/clientA'); // ✅ Fixed missing `/`
-            if (!res.ok) throw new Error('Failed to fetch studies');
+            const res = await fetch('/clients');
+            if (!res.ok) throw new Error('Failed to fetch clients');
 
-            const studies = await res.json();
-            console.log('Studies:', studies);
-
-            studiesList.innerHTML = studies.map((study) => `
-                <li>
-                    <button class="side-panel-studies-btns" onclick="loadVariations('${study}')"><img src="./assets/folder.png"/> ${study} </button>
-                    <ul id="study-list-${study}"></ul> <!-- ✅ Variations go inside this -->
-                </li>
+            const clients = await res.json();
+            clientSelect.innerHTML = clients.map(client => `
+                <option value="${client}">${client}</option>
             `).join('');
+
+            currentClient = clientSelect.value || clients[0] || null;
+            if (currentClient) {
+                clientTitle.textContent = currentClient;
+                applyClientTheme(currentClient);
+                await loadcampaigns();
+            } else {
+                campaignsList.innerHTML = '';
+            }
         } catch (error) {
-            console.error('Error loading studies:', error);
+            console.error('Error loading clients:', error);
         }
     }
 
-    loadStudies();
+    async function loadcampaigns() {
+        if (!currentClient) return;
+        try {
+            const res = await fetch(`/output/${currentClient}`);
+            if (!res.ok) throw new Error('Failed to fetch campaigns');
+
+            const campaigns = await res.json();
+            console.log('campaigns:', campaigns);
+
+            if (!Array.isArray(campaigns) || campaigns.length === 0) {
+                campaignsList.innerHTML = '<li>No campaigns found</li>';
+                return;
+            }
+
+            campaignsList.innerHTML = campaigns.map((campaign) => `
+                <li>
+                    <button class="side-panel-campaigns-btns" onclick="loadVariations('${campaign}')"><img src="/assets/folder.png"/> ${campaign} </button>
+                    <ul id="campaign-list-${campaign}"></ul>
+                </li>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading campaigns:', error);
+        }
+    }
+
+    clientSelect.addEventListener('change', async () => {
+        currentClient = clientSelect.value;
+        clientTitle.textContent = currentClient;
+        applyClientTheme(currentClient);
+        campaignsList.innerHTML = '';
+        await loadcampaigns();
+    });
+
+    loadClients();
 });
 
-async function loadVariations(study) {
-    const variationsList = document.getElementById(`study-list-${study}`); // ✅ Target correct UL
+async function loadVariations(campaign) {
+    const variationsList = document.getElementById(`campaign-list-${campaign}`);
     try {
-        const res = await fetch(`/output/clientA/${study}`);
+        const res = await fetch(`/output/${currentClient}/${campaign}`);
         if (!res.ok) throw new Error('Failed to fetch variations');
 
         const variations = await res.json();
-        console.log(`Variations for ${study}:`, variations);
+        console.log(`Variations for ${campaign}:`, variations);
 
         variationsList.innerHTML = variations.map(variation => `
             <li>
-                <button class="side-panel-variations-btns" onclick="loadEmails('${study}', '${variation}')"><img src="./assets/folder-small.png"/> ${variation} </button>
-                <ul id="email-list-${study}-${variation}"></ul> <!-- ✅ Unique ID -->
+                <button class="side-panel-variations-btns" onclick="loadEmails('${campaign}', '${variation}')"><img src="/assets/folder-small.png"/> ${variation} </button>
+                <ul id="email-list-${campaign}-${variation}"></ul>
             </li>
         `).join('');
     } catch (error) {
@@ -43,19 +105,19 @@ async function loadVariations(study) {
     }
 }
 
-async function loadEmails(study, variation) {
-    const emailsList = document.getElementById(`email-list-${study}-${variation}`);
+async function loadEmails(campaign, variation) {
+    const emailsList = document.getElementById(`email-list-${campaign}-${variation}`);
 
     try {
-        const res = await fetch(`/output/clientA/${study}/${variation}`);
+        const res = await fetch(`/output/${currentClient}/${campaign}/${variation}`);
         if (!res.ok) throw new Error('Failed to fetch emails');
 
         const emails = await res.json();
 
         emailsList.innerHTML = emails.map(email => `
             <li class="email-list-item">
-                <button class="side-panel-emails-btns" onclick="viewSpecificEmail('${study}', '${variation}', '${email}')">
-                    <img src="./assets/html.png"/> ${email}
+                <button class="side-panel-emails-btns" onclick="viewSpecificEmail('${campaign}', '${variation}', '${email}')">
+                    <img src="/assets/html.png"/> ${email}
                 </button>
                 <input type="checkbox" class="email-checkbox" value="${email}">
             </li>
@@ -66,42 +128,28 @@ async function loadEmails(study, variation) {
     }
 }
 
-function viewSpecificEmail(study, variation, email) {
-    // ✅ Update the email title
+function viewSpecificEmail(campaign, variation, email) {
     const emailTitle = document.querySelector('.email-title');
     if (emailTitle) {
         emailTitle.innerHTML = `<h2>${variation} - ${email}</h2>`;
     }
 
     const allEmailButtons = document.querySelectorAll('.side-panel-emails-btns');
-
-    // Remove active class from all buttons
     allEmailButtons.forEach(button => button.classList.remove('active-email'));
 
-    // Add active class to the clicked button
     event.target.classList.add('active-email');
-    // ✅ Set the iframe source
     const emailPreview = document.getElementById('email-preview');
     emailPreview.innerHTML = `
-        <iframe id="email-iframe" src="/output/clientA/${study}/${variation}/${email}" 
-            style="width: 100%; border: 1px solid #D6E1EB; overflow: hidden;"></iframe>
+        <iframe id="email-iframe" src="/output/${currentClient}/${campaign}/${variation}/${email}"
+            scrolling="no"
+            style="width: 100%; display: block;"></iframe>
     `;
 
-    // ✅ Wait for the iframe to load and adjust its height
     const iframe = document.getElementById('email-iframe');
     iframe.onload = () => {
-        const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-        
-        if (iframeDocument) {
-            setTimeout(() => {
-                // ✅ Get the email content height
-                const emailHeight = iframeDocument.documentElement.scrollHeight;
-                console.log('emailheight', emailHeight)
-                
-                // ✅ Apply height to iframe
-                iframe.style.height = emailHeight + 'px';
-            }, 100); // Delay to ensure rendering
-        }
+        setTimeout(() => {
+            updateIframeHeight();
+        }, 100);
     };
 }
 
@@ -114,26 +162,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const desktopButton = document.getElementById('screen-desktop');
 
     mobileButtonXs.addEventListener('click', () => {
-        emailWrapper.style.width = '275px'; // Common mobile width
-        emailWrapper.style.height = 'auto'; // Approximate mobile height
-        emailWrapper.style.overflow = 'hidden'; // Prevent scrollbars if needed
+        emailWrapper.style.width = '275px';
+        emailWrapper.style.height = 'auto';
+        emailWrapper.style.overflow = 'hidden';
+        setTimeout(() => updateIframeHeight(), 100);
     });
 
     mobileButtonS.addEventListener('click', () => {
-        emailWrapper.style.width = '325px'; // Common mobile width
-        emailWrapper.style.height = 'auto'; // Approximate mobile height
-        emailWrapper.style.overflow = 'hidden'; // Prevent scrollbars if needed
+        emailWrapper.style.width = '325px';
+        emailWrapper.style.height = 'auto';
+        emailWrapper.style.overflow = 'hidden';
+        setTimeout(() => updateIframeHeight(), 100);
     });
 
     mobileButtonM.addEventListener('click', () => {
-        emailWrapper.style.width = '375px'; // Common mobile width
-        emailWrapper.style.height = 'auto'; // Approximate mobile height
-        emailWrapper.style.overflow = 'hidden'; // Prevent scrollbars if needed
+        emailWrapper.style.width = '375px';
+        emailWrapper.style.height = 'auto';
+        emailWrapper.style.overflow = 'hidden';
+        setTimeout(() => updateIframeHeight(), 100);
     });
 
     desktopButton.addEventListener('click', () => {
-        emailWrapper.style.width = '600px'; // Reset to full width
-        emailWrapper.style.height = 'auto'; // Reset height
+        emailWrapper.style.width = '600px';
+        emailWrapper.style.height = 'auto';
+        setTimeout(() => updateIframeHeight(), 100);
     });
 });
 
@@ -142,10 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     screenButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Remove active class from all screen buttons
             screenButtons.forEach(btn => btn.classList.remove('active-screen'));
-
-            // Add active class to the clicked button
             button.classList.add('active-screen');
         });
     });
@@ -167,47 +216,43 @@ document.getElementById('export-pdf').addEventListener('click', async () => {
 
         if (!emailButton) {
             console.error(`No button found for email: ${emailName}`);
-            continue;  // Skip to the next email if no button is found
+            continue;
         }
         const onClickAttr = emailButton.getAttribute('onclick');
         const match = onClickAttr.match(/'([^']+)',\s*'([^']+)',\s*'([^']+)'/);
 
         if (!match) continue;
 
-        const study = match[1];
+        const campaign = match[1];
         const variation = match[2];
 
-        // ✅ 1. Fetch the email HTML content
-        const response = await fetch(`/output/clientA/${study}/${variation}/${emailName}`);
+        const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
         if (!response.ok) {
             console.error(`Failed to load email: ${emailName}`);
             continue;
         }
         const emailHTML = await response.text();
 
-        // ✅ 2. Create a hidden div to render the email
         const hiddenContainer = document.createElement('div');
         hiddenContainer.style.position = 'absolute';
         hiddenContainer.style.left = '-9999px';
-        hiddenContainer.style.width = '600px'; // Same as email preview width
+        hiddenContainer.style.width = '600px';
         hiddenContainer.innerHTML = emailHTML;
         document.body.appendChild(hiddenContainer);
 
-        // ✅ 3. Capture the email as an image
         const canvas = await html2canvas(hiddenContainer, { scale: 2 });
         const imgData = canvas.toDataURL('image/png');
 
-        document.body.removeChild(hiddenContainer); // ✅ Clean up
+        document.body.removeChild(hiddenContainer);
 
-        // ✅ 4. Add image to the PDF
         const imgWidth = 190;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
         pdf.addPage();
     }
 
-    pdf.deletePage(pdf.internal.pages.length); // Remove last empty page
-    pdf.save('selected-emails.pdf'); // ✅ Save PDF
+    pdf.deletePage(pdf.internal.pages.length);
+    pdf.save('selected-emails.pdf');
 });
 
 document.getElementById('export-png').addEventListener('click', async () => {
@@ -220,44 +265,38 @@ document.getElementById('export-png').addEventListener('click', async () => {
     for (const checkbox of selectedEmails) {
         const emailName = checkbox.value;
 
-        // ✅ Find the closest <li> and get the associated button
         const emailButton = checkbox.closest('.email-list-item')?.querySelector('.side-panel-emails-btns');
         if (!emailButton) {
             console.error(`No button found for email: ${emailName}`);
             continue;  
         }
 
-        // ✅ Extract study & variation from the button's onclick attribute
         const onClickAttr = emailButton.getAttribute('onclick');
         const match = onClickAttr.match(/'([^']+)',\s*'([^']+)',\s*'([^']+)'/);
         if (!match) continue;
 
-        const study = match[1];
+        const campaign = match[1];
         const variation = match[2];
 
-        // ✅ Fetch the email HTML content
-        const response = await fetch(`/output/clientA/${study}/${variation}/${emailName}`);
+        const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
         if (!response.ok) {
             console.error(`Failed to load email: ${emailName}`);
             continue;
         }
         const emailHTML = await response.text();
 
-        // ✅ Create a hidden div to render the email
         const hiddenContainer = document.createElement('div');
         hiddenContainer.style.position = 'absolute';
         hiddenContainer.style.left = '-9999px';
-        hiddenContainer.style.width = '600px'; // Same width as preview
+        hiddenContainer.style.width = '600px';
         hiddenContainer.innerHTML = emailHTML;
         document.body.appendChild(hiddenContainer);
 
-        // ✅ Convert the email to a PNG using html2canvas
         const canvas = await html2canvas(hiddenContainer, { scale: 2 });
         const imgData = canvas.toDataURL('image/png');
 
-        document.body.removeChild(hiddenContainer); // ✅ Clean up
+        document.body.removeChild(hiddenContainer);
 
-        // ✅ Trigger PNG download
         const link = document.createElement('a');
         link.href = imgData;
         link.download = `${emailName.replace('.html', '')}.png`;
@@ -266,9 +305,3 @@ document.getElementById('export-png').addEventListener('click', async () => {
 
     alert('Selected emails exported as PNG!');
 });
-
-
-
-
-
-
