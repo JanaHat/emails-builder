@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             campaignsList.innerHTML = campaigns.map((campaign) => `
                 <li>
-                    <button class="side-panel-campaigns-btns" onclick="loadVariations('${campaign}')"><img src="/assets/folder.png"/> ${campaign} </button>
+                    <button class="side-panel-campaigns-btns" data-campaign="${campaign}"><img src="/assets/folder.png"/> ${campaign} </button>
                     <ul id="campaign-list-${campaign}"></ul>
                 </li>
             `).join('');
@@ -82,6 +82,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadcampaigns();
     });
 
+    campaignsList.addEventListener('click', async (event) => {
+        const campaignButton = event.target.closest('.side-panel-campaigns-btns');
+        if (campaignButton) {
+            const campaign = campaignButton.dataset.campaign;
+            if (campaign) {
+                await loadVariations(campaign);
+            }
+            return;
+        }
+
+        const variationButton = event.target.closest('.side-panel-variations-btns');
+        if (variationButton) {
+            const { campaign, variation } = variationButton.dataset;
+            if (campaign && variation) {
+                await loadEmails(campaign, variation);
+            }
+            return;
+        }
+
+        const emailButton = event.target.closest('.side-panel-emails-btns');
+        if (emailButton) {
+            const { campaign, variation, email } = emailButton.dataset;
+            if (campaign && variation && email) {
+                viewSpecificEmail(campaign, variation, email, emailButton);
+            }
+        }
+    });
+
     loadClients();
 });
 
@@ -96,7 +124,7 @@ async function loadVariations(campaign) {
 
         variationsList.innerHTML = variations.map(variation => `
             <li>
-                <button class="side-panel-variations-btns" onclick="loadEmails('${campaign}', '${variation}')"><img src="/assets/folder-small.png"/> ${variation} </button>
+                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-variation="${variation}"><img src="/assets/folder-small.png"/> ${variation} </button>
                 <ul id="email-list-${campaign}-${variation}"></ul>
             </li>
         `).join('');
@@ -116,7 +144,7 @@ async function loadEmails(campaign, variation) {
 
         emailsList.innerHTML = emails.map(email => `
             <li class="email-list-item">
-                <button class="side-panel-emails-btns" onclick="viewSpecificEmail('${campaign}', '${variation}', '${email}')">
+                <button class="side-panel-emails-btns" data-campaign="${campaign}" data-variation="${variation}" data-email="${email}">
                     <img src="/assets/html.png"/> ${email}
                 </button>
                 <input type="checkbox" class="email-checkbox" value="${email}">
@@ -128,7 +156,7 @@ async function loadEmails(campaign, variation) {
     }
 }
 
-function viewSpecificEmail(campaign, variation, email) {
+function viewSpecificEmail(campaign, variation, email, emailButton) {
     const emailTitle = document.querySelector('.email-title');
     if (emailTitle) {
         emailTitle.innerHTML = `<h2>${variation} - ${email}</h2>`;
@@ -137,7 +165,9 @@ function viewSpecificEmail(campaign, variation, email) {
     const allEmailButtons = document.querySelectorAll('.side-panel-emails-btns');
     allEmailButtons.forEach(button => button.classList.remove('active-email'));
 
-    event.target.classList.add('active-email');
+    if (emailButton) {
+        emailButton.classList.add('active-email');
+    }
     const emailPreview = document.getElementById('email-preview');
     emailPreview.innerHTML = `
         <iframe id="email-iframe" src="/output/${currentClient}/${campaign}/${variation}/${email}"
@@ -218,13 +248,9 @@ document.getElementById('export-pdf').addEventListener('click', async () => {
             console.error(`No button found for email: ${emailName}`);
             continue;
         }
-        const onClickAttr = emailButton.getAttribute('onclick');
-        const match = onClickAttr.match(/'([^']+)',\s*'([^']+)',\s*'([^']+)'/);
-
-        if (!match) continue;
-
-        const campaign = match[1];
-        const variation = match[2];
+        const campaign = emailButton.dataset.campaign;
+        const variation = emailButton.dataset.variation;
+        if (!campaign || !variation) continue;
 
         const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
         if (!response.ok) {
@@ -271,12 +297,9 @@ document.getElementById('export-png').addEventListener('click', async () => {
             continue;  
         }
 
-        const onClickAttr = emailButton.getAttribute('onclick');
-        const match = onClickAttr.match(/'([^']+)',\s*'([^']+)',\s*'([^']+)'/);
-        if (!match) continue;
-
-        const campaign = match[1];
-        const variation = match[2];
+        const campaign = emailButton.dataset.campaign;
+        const variation = emailButton.dataset.variation;
+        if (!campaign || !variation) continue;
 
         const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
         if (!response.ok) {
