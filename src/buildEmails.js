@@ -8,7 +8,6 @@ import {
   fileExists,
   getDirectories,
   mjmlToHtml,
-  minifyHtml,
   safeImport,
   writeFileSync,
   createLogger,
@@ -32,12 +31,50 @@ class EmailBuilder {
   }
 
   /**
+   * Resolve campaign config with a fallback based on folder structure
+   * @param {string} campaignName - Campaign name
+   * @returns {object} Campaign config
+   */
+  resolveCampaignConfig(campaignName) {
+    try {
+      return getCampaignConfig(this.clientName, campaignName);
+    } catch (error) {
+      return {
+        name: campaignName,
+        templatesPath: path.join(campaignName, 'templates'),
+        outputPath: campaignName
+      };
+    }
+  }
+
+  /**
+   * Discover campaigns from config and filesystem
+   * @returns {Array<string>} Campaign names
+   */
+  getAvailableCampaigns() {
+    const clientRoot = path.join(
+      this.projectRoot,
+      config.global.sourceDir,
+      'clients',
+      this.clientName
+    );
+
+    const configCampaigns = Object.keys(this.clientConfig.campaigns || {});
+    const folderCampaigns = getDirectories(clientRoot).filter(dirName => {
+      const templatesDir = path.join(clientRoot, dirName, 'templates');
+      return fileExists(templatesDir);
+    });
+
+    return Array.from(new Set([...configCampaigns, ...folderCampaigns]));
+  }
+
+  /**
    * Get the templates directory for a specific campaign
    * @param {string} campaignName - Campaign name
    * @returns {string} Templates directory path
    */
   getTemplatesDirectory(campaignName) {
-    const campaignConfig = getCampaignConfig(this.clientName, campaignName);
+    const campaignConfig = this.resolveCampaignConfig(campaignName);
     return path.join(
       this.projectRoot,
       config.global.sourceDir,
@@ -53,7 +90,7 @@ class EmailBuilder {
    * @returns {string} Output directory path
    */
   getOutputDirectory(campaignName) {
-    const campaignConfig = getCampaignConfig(this.clientName, campaignName);
+    const campaignConfig = this.resolveCampaignConfig(campaignName);
     return path.join(
       this.projectRoot,
       config.global.outputDir,
@@ -102,6 +139,12 @@ class EmailBuilder {
     const { emailData } = dataModule;
     const { generateEmail } = templateModule;
 
+    if (typeof generateEmail !== 'function') {
+      const error = `Template export 'generateEmail' must be a function for ${templateName}`;
+      logger.error(error);
+      return [{ success: false, error, template: templateName }];
+    }
+
     // Validate email data
     const validation = validateEmailData(emailData);
     if (!validation.valid) {
@@ -114,6 +157,21 @@ class EmailBuilder {
     // Build each variation and localization
     for (const { variation, localizations } of emailData) {
       for (const [language, data] of Object.entries(localizations)) {
+        if (
+          Array.isArray(config.build.supportedLanguages) &&
+          config.build.supportedLanguages.length > 0 &&
+          !config.build.supportedLanguages.includes(language)
+        ) {
+          logger.warn(`Skipping unsupported language '${language}' for ${variation} in ${templateName}`);
+          results.push({
+            success: false,
+            error: `Unsupported language: ${language}`,
+            template: templateName,
+            variation,
+            language
+          });
+          continue;
+        }
         try {
           // Generate MJML content
           const mjmlContent = generateEmail(data);
@@ -122,7 +180,10 @@ class EmailBuilder {
           const { html, errors } = mjmlToHtml(mjmlContent, config.global.mjmlOptions);
           
           if (!html) {
-            const error = `Failed to convert MJML to HTML for ${variation}/${language}: ${errors.map(e => e.message).join(', ')}`;
+            const errorDetails = errors && errors.length
+              ? errors.map(e => e.message || e.formattedMessage || JSON.stringify(e)).join(', ')
+              : 'Unknown MJML error';
+            const error = `Failed to convert MJML to HTML for ${variation}/${language}: ${errorDetails}`;
             logger.error(error);
             results.push({ 
               success: false, 
@@ -134,9 +195,6 @@ class EmailBuilder {
             });
             continue;
           }
-
-          // Minify HTML if needed
-          const finalHtml = minifyHtml(html);
           
           // Ensure output directory exists
           const outputDir = path.join(this.getOutputDirectory(campaignName), variation);
@@ -144,7 +202,7 @@ class EmailBuilder {
           
           // Write HTML file
           const outputFile = path.join(outputDir, `${language}.${config.build.outputFormat}`);
-          const writeSuccess = writeFileSync(outputFile, finalHtml);
+          const writeSuccess = writeFileSync(outputFile, html);
           
           if (writeSuccess) {
             logger.success(`Built: ${outputFile}`);
@@ -225,7 +283,7 @@ class EmailBuilder {
     
     const campaigns = this.campaignName 
       ? [this.campaignName] 
-      : Object.keys(this.clientConfig.campaigns);
+      : this.getAvailableCampaigns();
 
     const allResults = [];
 

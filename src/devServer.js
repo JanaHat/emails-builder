@@ -39,7 +39,8 @@ class DevServer {
         ignored: [
           /(^|[\/\\])\../, // ignore dotfiles
           /node_modules/,
-          /\.git/
+          /\.git/,
+          new RegExp(`${path.sep}${config.global.outputDir}${path.sep}`)
         ],
         persistent: true,
         ignoreInitial: true

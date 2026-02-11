@@ -1,8 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import mjml2html from 'mjml';
-import { minify } from 'html-minifier';
 
 /**
  * Utility functions for the MJML email builder
@@ -60,10 +59,24 @@ export function getDirectories(dirPath) {
  */
 export function mjmlToHtml(mjmlContent, options = {}) {
   try {
-    const result = mjml2html(mjmlContent, {
+    const baseOptions = {
       validationLevel: 'strict',
+      minify: false,
       ...options
-    });
+    };
+
+    const result = mjml2html(mjmlContent, baseOptions);
+    if (!result.html) {
+      const softResult = mjml2html(mjmlContent, {
+        ...baseOptions,
+        validationLevel: 'soft'
+      });
+
+      return {
+        html: softResult.html,
+        errors: softResult.errors || result.errors || []
+      };
+    }
     
     if (result.errors && result.errors.length > 0) {
       console.warn('MJML warnings:', result.errors);
@@ -81,27 +94,6 @@ export function mjmlToHtml(mjmlContent, options = {}) {
   }
 }
 
-/**
- * Minify HTML content
- * @param {string} html - HTML content
- * @returns {string} Minified HTML
- */
-export function minifyHtml(html) {
-  return minify(html, {
-    removeComments: true,
-    removeCommentsFromCDATA: true,
-    removeCDATASectionsFromCDATA: true,
-    collapseWhitespace: true,
-    conservativeCollapse: true,
-    removeAttributeQuotes: true,
-    useShortDoctype: true,
-    keepClosingSlash: true,
-    minifyJS: true,
-    minifyCSS: true,
-    removeScriptTypeAttributes: true,
-    removeStyleLinkTypeAttributes: true
-  });
-}
 
 /**
  * Safely import a module with error handling
@@ -110,7 +102,9 @@ export function minifyHtml(html) {
  */
 export async function safeImport(modulePath) {
   try {
-    return await import(`file://${modulePath}`);
+    const moduleUrl = pathToFileURL(modulePath);
+    moduleUrl.searchParams.set('t', Date.now().toString());
+    return await import(moduleUrl.href);
   } catch (error) {
     console.error(`Failed to import ${modulePath}:`, error.message);
     return null;

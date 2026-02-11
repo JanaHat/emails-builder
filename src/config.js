@@ -43,11 +43,11 @@ export const config = {
       outputPath: 'clientB',
       campaigns: {
         campaignA: {
-          name: 'Campaign',
-          templatesPath: 'templates',
-          componentsPath: 'components',
-          outputPath: 'campaign'
-        }
+          name: 'Campaign A',
+          templatesPath: 'campaignA/templates',
+          componentsPath: 'campaignA/components',
+          outputPath: 'campaignA'
+        },
       },
       server: {
         port: 3001,
