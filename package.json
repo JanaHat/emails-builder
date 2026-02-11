@@ -30,6 +30,7 @@
     "cssnano-preset-lite": "^4.0.4",
     "express": "^4.21.2",
     "html-minifier": "^4.0.0",
+    "js-beautify": "^1.15.4",
     "mjml": "^4.15.3"
   },
   "devDependencies": {

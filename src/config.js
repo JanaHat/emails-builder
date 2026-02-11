@@ -63,7 +63,24 @@ export const config = {
       data: 'data.js',
       template: 'template.js'
     },
-    outputFormat: 'html'
+    outputFormat: 'html',
+    htmlFormat: 'minify',
+    htmlMinifyOptions: {
+      collapseWhitespace: true,
+      removeComments: true,
+      removeEmptyAttributes: false,
+      removeRedundantAttributes: false,
+      removeOptionalTags: false,
+      minifyCSS: true,
+      minifyJS: false,
+      keepClosingSlash: true
+    },
+    htmlBeautifyOptions: {
+      indent_size: 2,
+      preserve_newlines: true,
+      max_preserve_newlines: 2,
+      wrap_line_length: 0
+    }
   }
 };
 

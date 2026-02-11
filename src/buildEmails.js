@@ -12,7 +12,8 @@ import {
   writeFileSync,
   createLogger,
   validateEmailData,
-  generateBuildSummary
+  generateBuildSummary,
+  formatHtml
 } from './utils.js';
 
 const logger = createLogger('[EMAIL-BUILDER]');
@@ -200,9 +201,16 @@ class EmailBuilder {
           const outputDir = path.join(this.getOutputDirectory(campaignName), variation);
           ensureDirectoryExists(outputDir);
           
+          const formatMode = config.build.htmlFormat || 'none';
+          const formattedHtml = formatMode === 'minify'
+            ? formatHtml(html, 'minify', config.build.htmlMinifyOptions)
+            : formatMode === 'beautify'
+              ? formatHtml(html, 'beautify', config.build.htmlBeautifyOptions)
+              : html;
+
           // Write HTML file
           const outputFile = path.join(outputDir, `${language}.${config.build.outputFormat}`);
-          const writeSuccess = writeFileSync(outputFile, html);
+          const writeSuccess = writeFileSync(outputFile, formattedHtml);
           
           if (writeSuccess) {
             logger.success(`Built: ${outputFile}`);

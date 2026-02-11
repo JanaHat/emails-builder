@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import mjml2html from 'mjml';
+import { minify as minifyHtml } from 'html-minifier';
+import beautify from 'js-beautify';
 
 /**
  * Utility functions for the MJML email builder
@@ -192,4 +194,31 @@ export function generateBuildSummary(results) {
     successRate: total > 0 ? (successful / total * 100).toFixed(1) : 0,
     results
   };
+}
+
+/**
+ * Format HTML output
+ * @param {string} html - HTML string
+ * @param {string} format - 'minify' | 'beautify' | 'none'
+ * @param {object} options - Formatting options
+ * @returns {string} Formatted HTML
+ */
+export function formatHtml(html, format = 'none', options = {}) {
+  if (!html || format === 'none') {
+    return html;
+  }
+
+  try {
+    if (format === 'minify') {
+      return minifyHtml(html, options);
+    }
+
+    if (format === 'beautify') {
+      return beautify.html(html, options);
+    }
+  } catch (error) {
+    console.warn(`Failed to ${format} HTML:`, error.message);
+  }
+
+  return html;
 }
