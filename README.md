@@ -11,6 +11,8 @@ A powerful, scalable email template building system using MJML with support for 
 - **Configuration-driven**: Central configuration for easy management
 - **Build Validation**: Comprehensive error handling and validation
 - **CLI Interface**: Command-line tools for building specific clients/campaigns
+- **Shared Preview UI**: Single UI for all clients
+- **Shared Preview Server**: One server for all output
 
 ## 📋 Requirements
 
@@ -34,24 +36,23 @@ npm install
 mjml-emails/
 ├── src/
 │   ├── buildEmails.js          # Main build script
-│   ├── devServer.js            # Development server with file watching
+│   ├── devServer.js            # File watcher that rebuilds on change
+│   ├── server.js               # Shared preview server
 │   ├── config.js               # Central configuration
 │   ├── utils.js                # Shared utilities
 │   ├── shared/
-│   │   └── components/         # Shared MJML components
-│   │       ├── Button.js       # Button components
-│   │       ├── Header.js       # Header and navigation
-│   │       ├── Footer.js       # Footer components
-│   │       ├── Layout.js       # Layout components
-│   │       └── index.js        # Component exports
+│   │   ├── components/         # Shared MJML components
+│   │   │   ├── Button.js       # Button components
+│   │   │   ├── Header.js       # Header and navigation
+│   │   │   ├── Footer.js       # Footer components
+│   │   │   ├── Layout.js       # Layout components
+│   │   │   └── index.js        # Component exports
+│   │   └── ui/                 # Shared preview UI
 │   └── clients/
 │       ├── clientA/
-│       │   ├── buildEmails.js  # (Legacy - replaced by new system)
-│       │   ├── server.js       # Preview server
 │       │   ├── campaignA/
 │       │   │   ├── components/ # Campaign-specific components
 │       │   │   └── templates/  # Email templates
-│       │   └── ui/             # Preview UI
 │       └── clientB/
 │           └── ...
 ├── output/                     # Generated HTML files
@@ -85,25 +86,18 @@ node src/buildEmails.js clientA campaignA
 
 ```bash
 # Watch all clients for changes and auto-rebuild
-npm run dev
+npm run watch:all
 
 # Watch specific client
-npm run dev:clientA
-npm run dev:clientB
-
-# Alternative watch commands
-npm run watch
 npm run watch:clientA
+npm run watch:clientB
 ```
 
 ### Preview Server
 
 ```bash
-# Start preview server for clientA
-npm run start-clientA
-
-# Start preview server for clientB  
-npm run start-clientB
+# Start shared preview server
+npm run start
 ```
 
 Visit `http://localhost:3000` to preview emails in the browser.
@@ -242,10 +236,10 @@ export const config = {
 
 **Recommended development setup:**
 
-1. **Terminal 1 - Build Watcher**: `npm run dev:clientA`
+1. **Terminal 1 - Build Watcher**: `npm run watch:clientA`
    - Watches for file changes and rebuilds emails automatically
 
-2. **Terminal 2 - Preview Server**: `npm run start-clientA` 
+2. **Terminal 2 - Preview Server**: `npm run start` 
    - Serves the email preview UI at http://localhost:3000
 
 3. **Edit Templates**: Modify files in `src/clients/clientA/`
@@ -254,7 +248,6 @@ export const config = {
 4. **Preview**: Open `http://localhost:3000` to see results
 
 **Alternative single-terminal workflow:**
-- Use `npm run serve:clientA` to start just the preview server
 - Run `npm run build:clientA` manually when you make changes
 
 ## 📝 Best Practices
@@ -275,7 +268,6 @@ export const config = {
 - Use meaningful variation names
 
 ### Performance
-- The build system includes HTML minification
 - MJML validation catches errors early
 - File watching only rebuilds changed clients
 
