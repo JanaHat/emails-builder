@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Preview</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+<body>
+    
+    <div class="container">
+        <aside>
+            <h2 id="client-title">Client</h2>
+            <label for="client-select" class="client-label">Select client</label>
+            <select id="client-select" class="client-select"></select>
+            <hr>
+            <h3>campaigns</h3>
+            <ul id="campaign-list"></ul>
+        </aside>
+        <div class="email-side-wrapper">
+            <div class="top-bar">
+                <div class="export-container">
+                    <button id="export-pdf"><img src="/assets/download.png" />Export selected emails as PDF</button>
+                    <button id="export-png"><img src="/assets/photo.png"/>Export selected emails as PNG</button>
+                </div>
+                <div class="email-title"></div>
+                <div class="screen-view-btn-wrapper">
+                    <button class="screen-view-btn" id="screen-mobile-xs"><img id="screen-mobile-xs-img" src="/assets/mobile-phone.png" alt="">275px</button>
+                    <button class="screen-view-btn" id="screen-mobile-s"><img id="screen-mobile-s-img" src="/assets/mobile-phone.png" alt="">325px</button>
+                    <button class="screen-view-btn" id="screen-mobile-m"><img id="screen-mobile-m-img" src="/assets/mobile-phone.png" alt="">375px</button>
+                    <button class="screen-view-btn" id="screen-desktop"><img src="/assets/monitor.png" alt="">600px</button>
+                </div>
+                
+            </div>
+            <div class="email-wrapper">
+                
+                <div id="email-preview">
+                    <div id="loading-indicator" class="loading-indicator">Loading preview…</div>
+                </div>
+            </div>
+        </div>
+        
+
+    </div>
+    <script src="/app.js"></script>
+</body>
+</html>
