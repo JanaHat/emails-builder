@@ -250,6 +250,13 @@ export const config = {
 **Alternative single-terminal workflow:**
 - Run `npm run build:clientA` manually when you make changes
 
+## 🚀 Deploy to Vercel
+
+1. Push the repo to GitHub.
+2. In Vercel, import the GitHub repo.
+3. Set **Build Command** to `npm run build:all`.
+4. Deploy. Vercel will run the shared serverless entrypoint and serve the preview UI.
+
 ## 📝 Best Practices
 
 ### Template Organization

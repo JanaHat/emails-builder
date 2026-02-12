@@ -137,6 +137,10 @@ server.get('/output/:client/:campaign/:variation/:language', (req, res) => {
   res.sendFile(outputPath);
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  server.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
+
+export default server;
