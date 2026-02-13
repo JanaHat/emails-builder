@@ -203,14 +203,14 @@ export function generateBuildSummary(results) {
  * @param {object} options - Formatting options
  * @returns {string} Formatted HTML
  */
-export function formatHtml(html, format = 'none', options = {}) {
+export async function formatHtml(html, format = 'none', options = {}) {
   if (!html || format === 'none') {
     return html;
   }
 
   try {
     if (format === 'minify') {
-      return minifyHtml(html, options);
+      return await minifyHtml(html, options);
     }
 
     if (format === 'beautify') {
