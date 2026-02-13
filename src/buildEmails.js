@@ -203,9 +203,9 @@ class EmailBuilder {
           
           const formatMode = config.build.htmlFormat || 'none';
           const formattedHtml = formatMode === 'minify'
-            ? formatHtml(html, 'minify', config.build.htmlMinifyOptions)
+            ? await formatHtml(html, 'minify', config.build.htmlMinifyOptions)
             : formatMode === 'beautify'
-              ? formatHtml(html, 'beautify', config.build.htmlBeautifyOptions)
+              ? await formatHtml(html, 'beautify', config.build.htmlBeautifyOptions)
               : html;
 
           // Write HTML file

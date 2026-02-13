@@ -28,6 +28,16 @@ if (fs.existsSync(uiAssetsPath)) {
   server.use('/assets', express.static(uiAssetsPath, { etag: true, maxAge: '7d' }));
 }
 
+const vendorHtml2CanvasPath = path.join(projectRoot, 'node_modules', 'html2canvas', 'dist');
+if (fs.existsSync(vendorHtml2CanvasPath)) {
+  server.use('/vendor/html2canvas', express.static(vendorHtml2CanvasPath, { etag: true, maxAge: '30d' }));
+}
+
+const vendorJsPdfPath = path.join(projectRoot, 'node_modules', 'jspdf', 'dist');
+if (fs.existsSync(vendorJsPdfPath)) {
+  server.use('/vendor/jspdf', express.static(vendorJsPdfPath, { etag: true, maxAge: '30d' }));
+}
+
 const allowedClients = new Set(getAllClients());
 
 function isValidClient(client) {
