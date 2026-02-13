@@ -30,7 +30,9 @@
     "chokidar": "^4.0.3",
     "cssnano-preset-lite": "^4.0.4",
     "express": "^4.21.2",
+    "html2canvas": "^1.4.1",
     "html-minifier-terser": "^7.2.0",
+    "jspdf": "^2.5.1",
     "js-beautify": "^1.15.4",
     "mjml": "^4.15.3"
   },

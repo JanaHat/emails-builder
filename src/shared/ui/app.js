@@ -20,8 +20,8 @@ function loadExternalScript(url, globalName) {
 }
 
 async function ensureExportDeps() {
-    await loadExternalScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
-    await loadExternalScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf');
+    await loadExternalScript('/vendor/html2canvas/html2canvas.min.js', 'html2canvas');
+    await loadExternalScript('/vendor/jspdf/jspdf.umd.min.js', 'jspdf');
 
     const jsPDF = window.jspdf?.jsPDF;
     const html2canvas = window.html2canvas;
