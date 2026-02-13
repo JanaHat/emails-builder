@@ -11,7 +11,8 @@
     "start": "nodemon src/server.js",
     "start:clientA": "nodemon src/server.js",
     "start:clientB": "nodemon src/server.js",
-    "build": "node src/buildEmails.js",
+    "build": "node src/buildEmails.js && node src/minifyUi.js",
+    "minify:ui": "node src/minifyUi.js",
     "build:clientA": "node src/buildEmails.js clientA",
     "build:clientA:campaignA": "node src/buildEmails.js clientA campaignA",
     "build:clientA:campaignB": "node src/buildEmails.js clientA campaignB",
@@ -29,12 +30,16 @@
     "chokidar": "^4.0.3",
     "cssnano-preset-lite": "^4.0.4",
     "express": "^4.21.2",
-    "html-minifier": "^4.0.0",
+    "html-minifier-terser": "^7.2.0",
     "js-beautify": "^1.15.4",
     "mjml": "^4.15.3"
   },
+  "overrides": {
+    "html-minifier": "npm:html-minifier-terser@7.2.0"
+  },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "terser": "^5.30.3"
   }
 }

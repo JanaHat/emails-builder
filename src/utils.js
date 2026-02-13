@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import mjml2html from 'mjml';
-import { minify as minifyHtml } from 'html-minifier';
+import { minify as minifyHtml } from 'html-minifier-terser';
 import beautify from 'js-beautify';
 
 /**
