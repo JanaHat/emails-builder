@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             campaignsList.innerHTML = campaigns.map((campaign) => `
                 <li>
-                    <button class="side-panel-campaigns-btns" data-campaign="${campaign}"><img src="/assets/folder.png"/> ${campaign} </button>
+                    <button class="side-panel-campaigns-btns" data-campaign="${campaign}"><img src="/assets/folder.png" alt="Campaign folder"/> ${campaign} </button>
                     <ul id="campaign-list-${campaign}"></ul>
                 </li>
             `).join('');
@@ -188,7 +188,7 @@ async function loadVariations(campaign) {
 
         variationsList.innerHTML = variations.map(variation => `
             <li>
-                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-variation="${variation}"><img src="/assets/folder-small.png"/> ${variation} </button>
+                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-variation="${variation}"><img src="/assets/folder-small.png" alt="Variation folder"/> ${variation} </button>
                 <ul id="email-list-${campaign}-${variation}"></ul>
             </li>
         `).join('');
@@ -209,7 +209,7 @@ async function loadEmails(campaign, variation) {
         emailsList.innerHTML = emails.map(email => `
             <li class="email-list-item">
                 <button class="side-panel-emails-btns" data-campaign="${campaign}" data-variation="${variation}" data-email="${email}">
-                    <img src="/assets/html.png"/> ${email}
+                    <img src="/assets/html.png" alt="Email HTML"/> ${email}
                 </button>
                 <input type="checkbox" class="email-checkbox" value="${email}">
             </li>
