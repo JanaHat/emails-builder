@@ -12,7 +12,7 @@ export const Button = ({
   padding = "10px 25px",
   fontSize = "16px",
   fontWeight = "bold",
-  width = "auto",
+  width,
   align = "center",
   target = "_blank",
   rel = "noopener noreferrer"
@@ -25,7 +25,7 @@ export const Button = ({
     padding="${padding}"
     font-size="${fontSize}"
     font-weight="${fontWeight}"
-    width="${width}"
+    ${width ? `width="${width}"` : ''}
     align="${align}"
     target="${target}"
     rel="${rel}"

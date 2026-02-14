@@ -10,16 +10,19 @@ export const EmailLayout = ({
   children, 
   backgroundColor = "#F5F5F5",
   width = "600px",
-  fontFamily = "Arial, sans-serif"
+  fontFamily = "Arial, sans-serif",
+  preview = "",
+  headContent = ""
 }) => `
 <mjml>
   <mj-head>
+    ${preview ? `<mj-preview>${preview}</mj-preview>` : ''}
     <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
     <mj-attributes>
       <mj-all font-family="${fontFamily}" />
       <mj-body background-color="${backgroundColor}" width="${width}" />
-      <mj-container background-color="#FFFFFF" />
     </mj-attributes>
+    ${headContent}
   </mj-head>
   <mj-body>
     ${children}
