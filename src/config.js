@@ -58,7 +58,7 @@ export const config = {
 
   // Build configurations
   build: {
-    supportedLanguages: ['en-US', 'es-MX', 'es-US'],
+    supportedLanguages: ['en-US', 'es-US', 'en-GB', 'es-MX'],
     templateFileNames: {
       data: 'data.js',
       template: 'template.js'

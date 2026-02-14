@@ -22,15 +22,17 @@ function loadExternalScript(url, globalName) {
 async function ensureExportDeps() {
     await loadExternalScript('/vendor/html2canvas/html2canvas.min.js', 'html2canvas');
     await loadExternalScript('/vendor/jspdf/jspdf.umd.min.js', 'jspdf');
+    await loadExternalScript('/vendor/jszip/jszip.min.js', 'JSZip');
 
     const jsPDF = window.jspdf?.jsPDF;
     const html2canvas = window.html2canvas;
+    const JSZip = window.JSZip;
 
-    if (!jsPDF || !html2canvas) {
+    if (!jsPDF || !html2canvas || !JSZip) {
         throw new Error('Export libraries failed to load');
     }
 
-    return { jsPDF, html2canvas };
+    return { jsPDF, html2canvas, JSZip };
 }
 
 function updateIframeHeight(iframe) {
@@ -80,9 +82,30 @@ function setPreviewLoading(isLoading) {
     preview.classList.toggle('loading', isLoading);
 }
 
+function getSelectedExportWidth() {
+    const activeButton = document.querySelector('.screen-view-btn.active-screen');
+    if (activeButton) {
+        const text = activeButton.textContent || '';
+        const match = text.match(/\d+/);
+        if (match) {
+            return parseInt(match[0], 10);
+        }
+    }
+
+    const emailWrapper = document.querySelector('.email-wrapper');
+    if (emailWrapper) {
+        const width = parseInt(emailWrapper.style.width, 10);
+        if (!Number.isNaN(width) && width > 0) {
+            return width;
+        }
+    }
+
+    return 600;
+}
+
 function applyClientTheme(client) {
-    const isClientB = client === 'clientB';
-    document.body.classList.toggle('theme-clientB', isClientB);
+    if (!client) return;
+    document.body.dataset.client = client;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -97,12 +120,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const clients = await res.json();
             clientSelect.innerHTML = clients.map(client => `
-                <option value="${client}">${client}</option>
+                <option value="${client.key}">${client.name || client.key}</option>
             `).join('');
 
-            currentClient = clientSelect.value || clients[0] || null;
+            const singleClient = clients.length <= 1;
+            const clientLabel = document.querySelector('label[for="client-select"]');
+            clientSelect.disabled = singleClient;
+            clientSelect.setAttribute('aria-disabled', singleClient ? 'true' : 'false');
+            clientSelect.style.display = singleClient ? 'none' : '';
+            if (clientLabel) {
+                clientLabel.style.display = singleClient ? 'none' : '';
+            }
+
+            currentClient = clientSelect.value || clients[0]?.key || null;
             if (currentClient) {
-                clientTitle.textContent = currentClient;
+                const selectedClient = clients.find((client) => client.key === currentClient);
+                clientTitle.textContent = selectedClient?.name || currentClient;
                 applyClientTheme(currentClient);
                 await loadcampaigns();
             } else {
@@ -129,8 +162,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             campaignsList.innerHTML = campaigns.map((campaign) => `
                 <li>
-                    <button class="side-panel-campaigns-btns" data-campaign="${campaign}"><img src="/assets/folder.png" alt="Campaign folder"/> ${campaign} </button>
-                    <ul id="campaign-list-${campaign}"></ul>
+                    <button class="side-panel-campaigns-btns" data-campaign="${campaign.key}"><img src="/assets/folder.png" alt="Campaign folder"/> ${campaign.name || campaign.key} </button>
+                    <ul id="campaign-list-${campaign.key}"></ul>
                 </li>
             `).join('');
         } catch (error) {
@@ -140,7 +173,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     clientSelect.addEventListener('change', async () => {
         currentClient = clientSelect.value;
-        clientTitle.textContent = currentClient;
+        const selectedOption = clientSelect.options[clientSelect.selectedIndex];
+        clientTitle.textContent = selectedOption?.textContent || currentClient;
         applyClientTheme(currentClient);
         campaignsList.innerHTML = '';
         await loadcampaigns();
@@ -156,20 +190,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const variationButton = event.target.closest('.side-panel-variations-btns');
-        if (variationButton) {
-            const { campaign, variation } = variationButton.dataset;
-            if (campaign && variation) {
-                await loadEmails(campaign, variation);
+        const languageButton = event.target.closest('.side-panel-variations-btns');
+        if (languageButton) {
+            const { campaign, language } = languageButton.dataset;
+            if (campaign && language) {
+                await loadEmails(campaign, language);
             }
             return;
         }
 
         const emailButton = event.target.closest('.side-panel-emails-btns');
         if (emailButton) {
-            const { campaign, variation, email } = emailButton.dataset;
-            if (campaign && variation && email) {
-                viewSpecificEmail(campaign, variation, email, emailButton);
+            const { campaign, language, email } = emailButton.dataset;
+            if (campaign && language && email) {
+                viewSpecificEmail(campaign, language, email, emailButton);
             }
         }
     });
@@ -181,37 +215,37 @@ async function loadVariations(campaign) {
     const variationsList = document.getElementById(`campaign-list-${campaign}`);
     try {
         const res = await fetch(`/output/${currentClient}/${campaign}`);
-        if (!res.ok) throw new Error('Failed to fetch variations');
+        if (!res.ok) throw new Error('Failed to fetch languages');
 
-        const variations = await res.json();
-        console.log(`Variations for ${campaign}:`, variations);
+        const languages = await res.json();
+        console.log(`Languages for ${campaign}:`, languages);
 
-        variationsList.innerHTML = variations.map(variation => `
+        variationsList.innerHTML = languages.map(language => `
             <li>
-                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-variation="${variation}"><img src="/assets/folder-small.png" alt="Variation folder"/> ${variation} </button>
-                <ul id="email-list-${campaign}-${variation}"></ul>
+                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-language="${language}"><img src="/assets/folder-small.png" alt="Language folder"/> ${language} </button>
+                <ul id="email-list-${campaign}-${language}"></ul>
             </li>
         `).join('');
     } catch (error) {
-        console.error('Error loading variations:', error);
+        console.error('Error loading languages:', error);
     }
 }
 
-async function loadEmails(campaign, variation) {
-    const emailsList = document.getElementById(`email-list-${campaign}-${variation}`);
+async function loadEmails(campaign, language) {
+    const emailsList = document.getElementById(`email-list-${campaign}-${language}`);
 
     try {
-        const res = await fetch(`/output/${currentClient}/${campaign}/${variation}`);
+        const res = await fetch(`/output/${currentClient}/${campaign}/${language}`);
         if (!res.ok) throw new Error('Failed to fetch emails');
 
         const emails = await res.json();
 
         emailsList.innerHTML = emails.map(email => `
             <li class="email-list-item">
-                <button class="side-panel-emails-btns" data-campaign="${campaign}" data-variation="${variation}" data-email="${email}">
+                <button class="side-panel-emails-btns" data-campaign="${campaign}" data-language="${language}" data-email="${email}">
                     <img src="/assets/html.png" alt="Email HTML"/> ${email}
                 </button>
-                <input type="checkbox" class="email-checkbox" value="${email}">
+                <input type="checkbox" class="email-checkbox" value="${email}" title="Select for export" aria-label="Select for export">
             </li>
         `).join('');
 
@@ -220,10 +254,10 @@ async function loadEmails(campaign, variation) {
     }
 }
 
-function viewSpecificEmail(campaign, variation, email, emailButton) {
+function viewSpecificEmail(campaign, language, email, emailButton) {
     const emailTitle = document.querySelector('.email-title');
     if (emailTitle) {
-        emailTitle.innerHTML = `<h2>${variation} - ${email}</h2>`;
+        emailTitle.innerHTML = `<h2>${language} - ${email}</h2>`;
     }
 
     const allEmailButtons = document.querySelectorAll('.side-panel-emails-btns');
@@ -235,7 +269,7 @@ function viewSpecificEmail(campaign, variation, email, emailButton) {
     const emailPreview = document.getElementById('email-preview');
     setPreviewLoading(true);
     emailPreview.innerHTML = `
-        <iframe id="email-iframe" src="/output/${currentClient}/${campaign}/${variation}/${email}"
+        <iframe id="email-iframe" src="/output/${currentClient}/${campaign}/${language}/${email}"
             scrolling="no"
             style="width: 100%; display: block;"></iframe>
     `;
@@ -316,10 +350,10 @@ if (exportPdfButton) exportPdfButton.addEventListener('click', async () => {
             continue;
         }
         const campaign = emailButton.dataset.campaign;
-        const variation = emailButton.dataset.variation;
-        if (!campaign || !variation) continue;
+        const language = emailButton.dataset.language;
+        if (!campaign || !language) continue;
 
-        const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
+        const response = await fetch(`/output/${currentClient}/${campaign}/${language}/${emailName}`);
         if (!response.ok) {
             console.error(`Failed to load email: ${emailName}`);
             continue;
@@ -329,7 +363,8 @@ if (exportPdfButton) exportPdfButton.addEventListener('click', async () => {
         const hiddenContainer = document.createElement('div');
         hiddenContainer.style.position = 'absolute';
         hiddenContainer.style.left = '-9999px';
-        hiddenContainer.style.width = '600px';
+        const selectedWidth = getSelectedExportWidth();
+        hiddenContainer.style.width = `${selectedWidth}px`;
         hiddenContainer.innerHTML = emailHTML;
         document.body.appendChild(hiddenContainer);
 
@@ -338,9 +373,24 @@ if (exportPdfButton) exportPdfButton.addEventListener('click', async () => {
 
         document.body.removeChild(hiddenContainer);
 
-        const imgWidth = 190;
+        const baseWidth = 600;
+        const maxPdfWidth = 190;
+        const imgWidth = Math.min(maxPdfWidth, (selectedWidth / baseWidth) * maxPdfWidth);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        const margin = 10;
+        const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
+
+        let remainingHeight = imgHeight;
+        let position = margin;
+
+        while (remainingHeight > 0) {
+            pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+            remainingHeight -= pageHeight;
+            if (remainingHeight > 0) {
+                pdf.addPage();
+                position = margin - (imgHeight - remainingHeight);
+            }
+        }
         pdf.addPage();
     }
 
@@ -356,7 +406,8 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
         return;
     }
 
-    const { html2canvas } = await ensureExportDeps();
+    const { html2canvas, JSZip } = await ensureExportDeps();
+    const zip = new JSZip();
 
     for (const checkbox of selectedEmails) {
         const emailName = checkbox.value;
@@ -368,10 +419,10 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
         }
 
         const campaign = emailButton.dataset.campaign;
-        const variation = emailButton.dataset.variation;
-        if (!campaign || !variation) continue;
+        const language = emailButton.dataset.language;
+        if (!campaign || !language) continue;
 
-        const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
+        const response = await fetch(`/output/${currentClient}/${campaign}/${language}/${emailName}`);
         if (!response.ok) {
             console.error(`Failed to load email: ${emailName}`);
             continue;
@@ -381,7 +432,7 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
         const hiddenContainer = document.createElement('div');
         hiddenContainer.style.position = 'absolute';
         hiddenContainer.style.left = '-9999px';
-        hiddenContainer.style.width = '600px';
+        hiddenContainer.style.width = `${getSelectedExportWidth()}px`;
         hiddenContainer.innerHTML = emailHTML;
         document.body.appendChild(hiddenContainer);
 
@@ -390,11 +441,18 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
 
         document.body.removeChild(hiddenContainer);
 
-        const link = document.createElement('a');
-        link.href = imgData;
-        link.download = `${emailName.replace('.html', '')}.png`;
-        link.click();
+        const base64Data = imgData.split(',')[1] || '';
+        const safeEmail = emailName.replace('.html', '');
+        const fileName = `${campaign}-${language}-${safeEmail}.png`;
+        zip.file(fileName, base64Data, { base64: true });
     }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = 'selected-emails.zip';
+    link.click();
+    URL.revokeObjectURL(link.href);
 
     alert('Selected emails exported as PNG!');
 });
