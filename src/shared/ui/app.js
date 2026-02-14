@@ -81,8 +81,8 @@ function setPreviewLoading(isLoading) {
 }
 
 function applyClientTheme(client) {
-    const isClientB = client === 'clientB';
-    document.body.classList.toggle('theme-clientB', isClientB);
+    if (!client) return;
+    document.body.dataset.client = client;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
