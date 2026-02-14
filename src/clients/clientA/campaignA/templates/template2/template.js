@@ -167,7 +167,6 @@ export const generateEmail = ({
         children: `
             ${hero}
             ${intro}
-            ${offer}
             ${highlights}
             ${callToAction}
             ${footer}
