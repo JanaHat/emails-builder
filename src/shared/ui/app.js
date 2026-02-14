@@ -1,5 +1,38 @@
 let currentClient = null;
 
+const externalScriptCache = new Map();
+
+function loadExternalScript(url, globalName) {
+    if (globalName && window[globalName]) return Promise.resolve(window[globalName]);
+    if (externalScriptCache.has(url)) return externalScriptCache.get(url);
+
+    const promise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.async = true;
+        script.onload = () => resolve(globalName ? window[globalName] : true);
+        script.onerror = () => reject(new Error(`Failed to load ${url}`));
+        document.head.appendChild(script);
+    });
+
+    externalScriptCache.set(url, promise);
+    return promise;
+}
+
+async function ensureExportDeps() {
+    await loadExternalScript('/vendor/html2canvas/html2canvas.min.js', 'html2canvas');
+    await loadExternalScript('/vendor/jspdf/jspdf.umd.min.js', 'jspdf');
+
+    const jsPDF = window.jspdf?.jsPDF;
+    const html2canvas = window.html2canvas;
+
+    if (!jsPDF || !html2canvas) {
+        throw new Error('Export libraries failed to load');
+    }
+
+    return { jsPDF, html2canvas };
+}
+
 function updateIframeHeight(iframe) {
     if (!iframe) return;
 
@@ -96,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             campaignsList.innerHTML = campaigns.map((campaign) => `
                 <li>
-                    <button class="side-panel-campaigns-btns" data-campaign="${campaign}"><img src="/assets/folder.png"/> ${campaign} </button>
+                    <button class="side-panel-campaigns-btns" data-campaign="${campaign}"><img src="/assets/folder.png" alt="Campaign folder"/> ${campaign} </button>
                     <ul id="campaign-list-${campaign}"></ul>
                 </li>
             `).join('');
@@ -155,7 +188,7 @@ async function loadVariations(campaign) {
 
         variationsList.innerHTML = variations.map(variation => `
             <li>
-                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-variation="${variation}"><img src="/assets/folder-small.png"/> ${variation} </button>
+                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-variation="${variation}"><img src="/assets/folder-small.png" alt="Variation folder"/> ${variation} </button>
                 <ul id="email-list-${campaign}-${variation}"></ul>
             </li>
         `).join('');
@@ -176,7 +209,7 @@ async function loadEmails(campaign, variation) {
         emailsList.innerHTML = emails.map(email => `
             <li class="email-list-item">
                 <button class="side-panel-emails-btns" data-campaign="${campaign}" data-variation="${variation}" data-email="${email}">
-                    <img src="/assets/html.png"/> ${email}
+                    <img src="/assets/html.png" alt="Email HTML"/> ${email}
                 </button>
                 <input type="checkbox" class="email-checkbox" value="${email}">
             </li>
@@ -263,14 +296,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-document.getElementById('export-pdf').addEventListener('click', async () => {
+const exportPdfButton = document.getElementById('export-pdf');
+if (exportPdfButton) exportPdfButton.addEventListener('click', async () => {
     const selectedEmails = document.querySelectorAll('.email-checkbox:checked');
     if (selectedEmails.length === 0) {
         alert('Please select at least one email to export.');
         return;
     }
 
-    const { jsPDF } = window.jspdf;
+    const { jsPDF, html2canvas } = await ensureExportDeps();
     const pdf = new jsPDF();
 
     for (const checkbox of selectedEmails) {
@@ -314,12 +348,15 @@ document.getElementById('export-pdf').addEventListener('click', async () => {
     pdf.save('selected-emails.pdf');
 });
 
-document.getElementById('export-png').addEventListener('click', async () => {
+const exportPngButton = document.getElementById('export-png');
+if (exportPngButton) exportPngButton.addEventListener('click', async () => {
     const selectedEmails = document.querySelectorAll('.email-checkbox:checked');
     if (selectedEmails.length === 0) {
         alert('Please select at least one email to export.');
         return;
     }
+
+    const { html2canvas } = await ensureExportDeps();
 
     for (const checkbox of selectedEmails) {
         const emailName = checkbox.value;

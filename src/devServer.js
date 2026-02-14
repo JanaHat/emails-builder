@@ -2,6 +2,7 @@ import chokidar from 'chokidar';
 import { EmailBuilder } from './buildEmails.js';
 import { config, getAllClients } from './config.js';
 import { createLogger, getProjectRoot } from './utils.js';
+import { minifyUi } from './minifyUi.js';
 import path from 'path';
 
 const logger = createLogger('[DEV-SERVER]');
@@ -65,15 +66,16 @@ class DevServer {
     });
 
     sharedWatcher
-      .on('change', () => this.handleSharedChange())
-      .on('add', () => this.handleSharedChange())
-      .on('unlink', () => this.handleSharedChange())
+      .on('change', (filePath) => this.handleSharedChange(filePath))
+      .on('add', (filePath) => this.handleSharedChange(filePath))
+      .on('unlink', (filePath) => this.handleSharedChange(filePath))
       .on('error', (error) => logger.error(`Shared watcher error: ${error}`));
 
     this.watchers.set('shared', sharedWatcher);
     logger.info(`Watching shared components: ${sharedPath}`);
 
     // Initial build
+    this.minifyUiIfNeeded();
     this.buildAll();
   }
 
@@ -88,10 +90,25 @@ class DevServer {
   /**
    * Handle shared component changes (rebuild all clients)
    */
-  handleSharedChange() {
+  handleSharedChange(filePath = '') {
+    if (this.shouldMinifyUi(filePath)) {
+      this.minifyUiIfNeeded();
+    }
+
     logger.info('Shared component changed, rebuilding all clients...');
     const clients = this.clientName ? [this.clientName] : getAllClients();
     clients.forEach(client => this.queueBuild(client));
+  }
+
+  shouldMinifyUi(filePath) {
+    if (!filePath) return false;
+    const normalized = path.normalize(filePath);
+    const target = path.join(this.projectRoot, 'src', 'shared', 'ui', 'app.js');
+    return normalized === target;
+  }
+
+  minifyUiIfNeeded() {
+    minifyUi().catch((error) => logger.error(`UI minify failed: ${error.message}`));
   }
 
   /**

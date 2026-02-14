@@ -1,6 +1,7 @@
 {
   "version": 2,
   "buildCommand": "npm run build:all",
+  "outputDirectory": "output",
   "routes": [
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/api/server.js" }

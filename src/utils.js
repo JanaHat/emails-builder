@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import mjml2html from 'mjml';
-import { minify as minifyHtml } from 'html-minifier';
+import { minify as minifyHtml } from 'html-minifier-terser';
 import beautify from 'js-beautify';
 
 /**
@@ -203,14 +203,14 @@ export function generateBuildSummary(results) {
  * @param {object} options - Formatting options
  * @returns {string} Formatted HTML
  */
-export function formatHtml(html, format = 'none', options = {}) {
+export async function formatHtml(html, format = 'none', options = {}) {
   if (!html || format === 'none') {
     return html;
   }
 
   try {
     if (format === 'minify') {
-      return minifyHtml(html, options);
+      return await minifyHtml(html, options);
     }
 
     if (format === 'beautify') {
