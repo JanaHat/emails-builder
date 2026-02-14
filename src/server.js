@@ -70,10 +70,15 @@ function registerCampaignAssets() {
 registerCampaignAssets();
 
 server.get('/clients', (req, res) => {
-  const clients = Array.from(allowedClients).filter((client) => {
-    const clientPath = path.join(outputDir, client);
-    return fs.existsSync(clientPath);
-  });
+  const clients = Array.from(allowedClients)
+    .filter((client) => {
+      const clientPath = path.join(outputDir, client);
+      return fs.existsSync(clientPath);
+    })
+    .map((client) => ({
+      key: client,
+      name: config.clients?.[client]?.name || client
+    }));
   res.json(clients);
 });
 
@@ -91,7 +96,11 @@ server.get('/output/:client', (req, res) => {
 
   const campaigns = fs
     .readdirSync(campaignsPath)
-    .filter((file) => fs.statSync(path.join(campaignsPath, file)).isDirectory());
+    .filter((file) => fs.statSync(path.join(campaignsPath, file)).isDirectory())
+    .map((campaign) => ({
+      key: campaign,
+      name: config.clients?.[client]?.campaigns?.[campaign]?.name || campaign
+    }));
   res.json(campaigns);
 });
 

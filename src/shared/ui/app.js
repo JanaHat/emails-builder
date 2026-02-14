@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const clients = await res.json();
             clientSelect.innerHTML = clients.map(client => `
-                <option value="${client}">${client}</option>
+                <option value="${client.key}">${client.name || client.key}</option>
             `).join('');
 
             const singleClient = clients.length <= 1;
@@ -109,9 +109,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 clientLabel.style.display = singleClient ? 'none' : '';
             }
 
-            currentClient = clientSelect.value || clients[0] || null;
+            currentClient = clientSelect.value || clients[0]?.key || null;
             if (currentClient) {
-                clientTitle.textContent = currentClient;
+                const selectedClient = clients.find((client) => client.key === currentClient);
+                clientTitle.textContent = selectedClient?.name || currentClient;
                 applyClientTheme(currentClient);
                 await loadcampaigns();
             } else {
@@ -138,8 +139,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             campaignsList.innerHTML = campaigns.map((campaign) => `
                 <li>
-                    <button class="side-panel-campaigns-btns" data-campaign="${campaign}"><img src="/assets/folder.png" alt="Campaign folder"/> ${campaign} </button>
-                    <ul id="campaign-list-${campaign}"></ul>
+                    <button class="side-panel-campaigns-btns" data-campaign="${campaign.key}"><img src="/assets/folder.png" alt="Campaign folder"/> ${campaign.name || campaign.key} </button>
+                    <ul id="campaign-list-${campaign.key}"></ul>
                 </li>
             `).join('');
         } catch (error) {
@@ -149,7 +150,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     clientSelect.addEventListener('change', async () => {
         currentClient = clientSelect.value;
-        clientTitle.textContent = currentClient;
+        const selectedOption = clientSelect.options[clientSelect.selectedIndex];
+        clientTitle.textContent = selectedOption?.textContent || currentClient;
         applyClientTheme(currentClient);
         campaignsList.innerHTML = '';
         await loadcampaigns();
