@@ -22,15 +22,17 @@ function loadExternalScript(url, globalName) {
 async function ensureExportDeps() {
     await loadExternalScript('/vendor/html2canvas/html2canvas.min.js', 'html2canvas');
     await loadExternalScript('/vendor/jspdf/jspdf.umd.min.js', 'jspdf');
+    await loadExternalScript('/vendor/jszip/jszip.min.js', 'JSZip');
 
     const jsPDF = window.jspdf?.jsPDF;
     const html2canvas = window.html2canvas;
+    const JSZip = window.JSZip;
 
-    if (!jsPDF || !html2canvas) {
+    if (!jsPDF || !html2canvas || !JSZip) {
         throw new Error('Export libraries failed to load');
     }
 
-    return { jsPDF, html2canvas };
+    return { jsPDF, html2canvas, JSZip };
 }
 
 function updateIframeHeight(iframe) {
@@ -78,6 +80,27 @@ function setPreviewLoading(isLoading) {
     const preview = document.getElementById('email-preview');
     if (!preview) return;
     preview.classList.toggle('loading', isLoading);
+}
+
+function getSelectedExportWidth() {
+    const activeButton = document.querySelector('.screen-view-btn.active-screen');
+    if (activeButton) {
+        const text = activeButton.textContent || '';
+        const match = text.match(/\d+/);
+        if (match) {
+            return parseInt(match[0], 10);
+        }
+    }
+
+    const emailWrapper = document.querySelector('.email-wrapper');
+    if (emailWrapper) {
+        const width = parseInt(emailWrapper.style.width, 10);
+        if (!Number.isNaN(width) && width > 0) {
+            return width;
+        }
+    }
+
+    return 600;
 }
 
 function applyClientTheme(client) {
@@ -340,7 +363,8 @@ if (exportPdfButton) exportPdfButton.addEventListener('click', async () => {
         const hiddenContainer = document.createElement('div');
         hiddenContainer.style.position = 'absolute';
         hiddenContainer.style.left = '-9999px';
-        hiddenContainer.style.width = '600px';
+        const selectedWidth = getSelectedExportWidth();
+        hiddenContainer.style.width = `${selectedWidth}px`;
         hiddenContainer.innerHTML = emailHTML;
         document.body.appendChild(hiddenContainer);
 
@@ -349,9 +373,24 @@ if (exportPdfButton) exportPdfButton.addEventListener('click', async () => {
 
         document.body.removeChild(hiddenContainer);
 
-        const imgWidth = 190;
+        const baseWidth = 600;
+        const maxPdfWidth = 190;
+        const imgWidth = Math.min(maxPdfWidth, (selectedWidth / baseWidth) * maxPdfWidth);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        const margin = 10;
+        const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
+
+        let remainingHeight = imgHeight;
+        let position = margin;
+
+        while (remainingHeight > 0) {
+            pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+            remainingHeight -= pageHeight;
+            if (remainingHeight > 0) {
+                pdf.addPage();
+                position = margin - (imgHeight - remainingHeight);
+            }
+        }
         pdf.addPage();
     }
 
@@ -367,7 +406,8 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
         return;
     }
 
-    const { html2canvas } = await ensureExportDeps();
+    const { html2canvas, JSZip } = await ensureExportDeps();
+    const zip = new JSZip();
 
     for (const checkbox of selectedEmails) {
         const emailName = checkbox.value;
@@ -392,7 +432,7 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
         const hiddenContainer = document.createElement('div');
         hiddenContainer.style.position = 'absolute';
         hiddenContainer.style.left = '-9999px';
-        hiddenContainer.style.width = '600px';
+        hiddenContainer.style.width = `${getSelectedExportWidth()}px`;
         hiddenContainer.innerHTML = emailHTML;
         document.body.appendChild(hiddenContainer);
 
@@ -401,11 +441,18 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
 
         document.body.removeChild(hiddenContainer);
 
-        const link = document.createElement('a');
-        link.href = imgData;
-        link.download = `${emailName.replace('.html', '')}.png`;
-        link.click();
+        const base64Data = imgData.split(',')[1] || '';
+        const safeEmail = emailName.replace('.html', '');
+        const fileName = `${campaign}-${language}-${safeEmail}.png`;
+        zip.file(fileName, base64Data, { base64: true });
     }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = 'selected-emails.zip';
+    link.click();
+    URL.revokeObjectURL(link.href);
 
     alert('Selected emails exported as PNG!');
 });

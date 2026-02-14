@@ -38,6 +38,11 @@ if (fs.existsSync(vendorJsPdfPath)) {
   server.use('/vendor/jspdf', express.static(vendorJsPdfPath, { etag: true, maxAge: '30d' }));
 }
 
+const vendorJsZipPath = path.join(projectRoot, 'node_modules', 'jszip', 'dist');
+if (fs.existsSync(vendorJsZipPath)) {
+  server.use('/vendor/jszip', express.static(vendorJsZipPath, { etag: true, maxAge: '30d' }));
+}
+
 const scopedClient = process.env.CLIENT;
 const allowedClients = new Set(scopedClient ? [scopedClient] : getAllClients());
 
