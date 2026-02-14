@@ -167,20 +167,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const variationButton = event.target.closest('.side-panel-variations-btns');
-        if (variationButton) {
-            const { campaign, variation } = variationButton.dataset;
-            if (campaign && variation) {
-                await loadEmails(campaign, variation);
+        const languageButton = event.target.closest('.side-panel-variations-btns');
+        if (languageButton) {
+            const { campaign, language } = languageButton.dataset;
+            if (campaign && language) {
+                await loadEmails(campaign, language);
             }
             return;
         }
 
         const emailButton = event.target.closest('.side-panel-emails-btns');
         if (emailButton) {
-            const { campaign, variation, email } = emailButton.dataset;
-            if (campaign && variation && email) {
-                viewSpecificEmail(campaign, variation, email, emailButton);
+            const { campaign, language, email } = emailButton.dataset;
+            if (campaign && language && email) {
+                viewSpecificEmail(campaign, language, email, emailButton);
             }
         }
     });
@@ -192,34 +192,34 @@ async function loadVariations(campaign) {
     const variationsList = document.getElementById(`campaign-list-${campaign}`);
     try {
         const res = await fetch(`/output/${currentClient}/${campaign}`);
-        if (!res.ok) throw new Error('Failed to fetch variations');
+        if (!res.ok) throw new Error('Failed to fetch languages');
 
-        const variations = await res.json();
-        console.log(`Variations for ${campaign}:`, variations);
+        const languages = await res.json();
+        console.log(`Languages for ${campaign}:`, languages);
 
-        variationsList.innerHTML = variations.map(variation => `
+        variationsList.innerHTML = languages.map(language => `
             <li>
-                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-variation="${variation}"><img src="/assets/folder-small.png" alt="Variation folder"/> ${variation} </button>
-                <ul id="email-list-${campaign}-${variation}"></ul>
+                <button class="side-panel-variations-btns" data-campaign="${campaign}" data-language="${language}"><img src="/assets/folder-small.png" alt="Language folder"/> ${language} </button>
+                <ul id="email-list-${campaign}-${language}"></ul>
             </li>
         `).join('');
     } catch (error) {
-        console.error('Error loading variations:', error);
+        console.error('Error loading languages:', error);
     }
 }
 
-async function loadEmails(campaign, variation) {
-    const emailsList = document.getElementById(`email-list-${campaign}-${variation}`);
+async function loadEmails(campaign, language) {
+    const emailsList = document.getElementById(`email-list-${campaign}-${language}`);
 
     try {
-        const res = await fetch(`/output/${currentClient}/${campaign}/${variation}`);
+        const res = await fetch(`/output/${currentClient}/${campaign}/${language}`);
         if (!res.ok) throw new Error('Failed to fetch emails');
 
         const emails = await res.json();
 
         emailsList.innerHTML = emails.map(email => `
             <li class="email-list-item">
-                <button class="side-panel-emails-btns" data-campaign="${campaign}" data-variation="${variation}" data-email="${email}">
+                <button class="side-panel-emails-btns" data-campaign="${campaign}" data-language="${language}" data-email="${email}">
                     <img src="/assets/html.png" alt="Email HTML"/> ${email}
                 </button>
                 <input type="checkbox" class="email-checkbox" value="${email}">
@@ -231,10 +231,10 @@ async function loadEmails(campaign, variation) {
     }
 }
 
-function viewSpecificEmail(campaign, variation, email, emailButton) {
+function viewSpecificEmail(campaign, language, email, emailButton) {
     const emailTitle = document.querySelector('.email-title');
     if (emailTitle) {
-        emailTitle.innerHTML = `<h2>${variation} - ${email}</h2>`;
+        emailTitle.innerHTML = `<h2>${language} - ${email}</h2>`;
     }
 
     const allEmailButtons = document.querySelectorAll('.side-panel-emails-btns');
@@ -246,7 +246,7 @@ function viewSpecificEmail(campaign, variation, email, emailButton) {
     const emailPreview = document.getElementById('email-preview');
     setPreviewLoading(true);
     emailPreview.innerHTML = `
-        <iframe id="email-iframe" src="/output/${currentClient}/${campaign}/${variation}/${email}"
+        <iframe id="email-iframe" src="/output/${currentClient}/${campaign}/${language}/${email}"
             scrolling="no"
             style="width: 100%; display: block;"></iframe>
     `;
@@ -327,10 +327,10 @@ if (exportPdfButton) exportPdfButton.addEventListener('click', async () => {
             continue;
         }
         const campaign = emailButton.dataset.campaign;
-        const variation = emailButton.dataset.variation;
-        if (!campaign || !variation) continue;
+        const language = emailButton.dataset.language;
+        if (!campaign || !language) continue;
 
-        const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
+        const response = await fetch(`/output/${currentClient}/${campaign}/${language}/${emailName}`);
         if (!response.ok) {
             console.error(`Failed to load email: ${emailName}`);
             continue;
@@ -379,10 +379,10 @@ if (exportPngButton) exportPngButton.addEventListener('click', async () => {
         }
 
         const campaign = emailButton.dataset.campaign;
-        const variation = emailButton.dataset.variation;
-        if (!campaign || !variation) continue;
+        const language = emailButton.dataset.language;
+        if (!campaign || !language) continue;
 
-        const response = await fetch(`/output/${currentClient}/${campaign}/${variation}/${emailName}`);
+        const response = await fetch(`/output/${currentClient}/${campaign}/${language}/${emailName}`);
         if (!response.ok) {
             console.error(`Failed to load email: ${emailName}`);
             continue;

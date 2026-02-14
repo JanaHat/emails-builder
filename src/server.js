@@ -116,36 +116,36 @@ server.get('/output/:client/:campaign', (req, res) => {
     return res.status(404).json({ error: 'Campaign folder not found' });
   }
 
-  const variations = fs
+  const languages = fs
     .readdirSync(campaignPath)
     .filter((file) => fs.statSync(path.join(campaignPath, file)).isDirectory());
-  res.json(variations);
+  res.json(languages);
 });
 
-server.get('/output/:client/:campaign/:variation', (req, res) => {
-  const { client, campaign, variation } = req.params;
+server.get('/output/:client/:campaign/:language', (req, res) => {
+  const { client, campaign, language } = req.params;
   if (!isValidClient(client)) {
     return res.status(404).json({ error: 'Client not found' });
   }
 
-  const variationPath = path.join(outputDir, client, campaign, variation);
+  const languagePath = path.join(outputDir, client, campaign, language);
 
-  if (!fs.existsSync(variationPath)) {
+  if (!fs.existsSync(languagePath)) {
     return res.status(404).json({ error: 'Variant folder not found' });
   }
 
-  const emails = fs.readdirSync(variationPath).filter((file) => file.endsWith('.html'));
+  const emails = fs.readdirSync(languagePath).filter((file) => file.endsWith('.html'));
   res.json(emails);
 });
 
-server.get('/output/:client/:campaign/:variation/:language', (req, res) => {
-  const { client, campaign, variation, language } = req.params;
+server.get('/output/:client/:campaign/:language/:email', (req, res) => {
+  const { client, campaign, language, email } = req.params;
   if (!isValidClient(client)) {
     return res.status(404).send('Client not found');
   }
 
   const basePath = path.resolve(outputDir, client);
-  const outputPath = path.resolve(outputDir, client, campaign, variation, language);
+  const outputPath = path.resolve(outputDir, client, campaign, language, email);
   if (!isSafePath(outputPath, basePath)) {
     return res.status(400).send('Invalid path');
   }

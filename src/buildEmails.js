@@ -199,7 +199,7 @@ class EmailBuilder {
           }
           
           // Ensure output directory exists
-          const outputDir = path.join(this.getOutputDirectory(campaignName), variation);
+          const outputDir = path.join(this.getOutputDirectory(campaignName), language);
           ensureDirectoryExists(outputDir);
           
           const formatMode = config.build.htmlFormat || 'none';
@@ -210,7 +210,7 @@ class EmailBuilder {
               : html;
 
           // Write HTML file
-          const outputFile = path.join(outputDir, `${language}.${config.build.outputFormat}`);
+          const outputFile = path.join(outputDir, `${variation}.${config.build.outputFormat}`);
           const writeSuccess = writeFileSync(outputFile, formattedHtml);
           
           if (writeSuccess) {
@@ -297,25 +297,13 @@ class EmailBuilder {
     const campaignOutputDir = this.getOutputDirectory(campaignName);
     if (!fs.existsSync(campaignOutputDir)) return;
 
-    const variations = getDirectories(campaignOutputDir);
-    variations.forEach((variation) => {
-      const variationDir = path.join(campaignOutputDir, variation);
-      const files = fs.readdirSync(variationDir);
-      files.forEach((file) => {
-        const ext = path.extname(file).replace('.', '');
-        if (ext !== config.build.outputFormat) return;
-
-        const language = path.basename(file, `.${config.build.outputFormat}`);
-        if (!supported.includes(language)) {
-          const filePath = path.join(variationDir, file);
-          try {
-            fs.unlinkSync(filePath);
-            logger.info(`Removed unsupported output: ${filePath}`);
-          } catch (error) {
-            logger.warn(`Failed to remove ${filePath}: ${error.message}`);
-          }
-        }
-      });
+    const languages = getDirectories(campaignOutputDir);
+    languages.forEach((language) => {
+      if (!supported.includes(language)) {
+        const languageDir = path.join(campaignOutputDir, language);
+        this.removeDirectory(languageDir);
+        logger.info(`Removed unsupported language output: ${languageDir}`);
+      }
     });
   }
 
@@ -372,8 +360,8 @@ class EmailBuilder {
           }
           const outputFile = path.join(
             this.getOutputDirectory(campaignName),
-            variation,
-            `${language}.${outputFormat}`
+            language,
+            `${variation}.${outputFormat}`
           );
           expected.add(outputFile);
         }
@@ -424,6 +412,22 @@ class EmailBuilder {
         logger.warn(`Failed to remove empty dir ${dirPath}: ${error.message}`);
       }
     }
+  }
+
+  /**
+   * Remove a directory and all its contents
+   */
+  removeDirectory(dirPath) {
+    if (!fs.existsSync(dirPath)) return;
+    fs.readdirSync(dirPath, { withFileTypes: true }).forEach((entry) => {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        this.removeDirectory(fullPath);
+      } else {
+        fs.unlinkSync(fullPath);
+      }
+    });
+    fs.rmdirSync(dirPath);
   }
 
   /**
