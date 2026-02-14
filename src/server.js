@@ -38,7 +38,8 @@ if (fs.existsSync(vendorJsPdfPath)) {
   server.use('/vendor/jspdf', express.static(vendorJsPdfPath, { etag: true, maxAge: '30d' }));
 }
 
-const allowedClients = new Set(getAllClients());
+const scopedClient = process.env.CLIENT;
+const allowedClients = new Set(scopedClient ? [scopedClient] : getAllClients());
 
 function isValidClient(client) {
   return allowedClients.has(client);

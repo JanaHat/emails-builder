@@ -100,6 +100,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <option value="${client}">${client}</option>
             `).join('');
 
+            const singleClient = clients.length <= 1;
+            const clientLabel = document.querySelector('label[for="client-select"]');
+            clientSelect.disabled = singleClient;
+            clientSelect.setAttribute('aria-disabled', singleClient ? 'true' : 'false');
+            clientSelect.style.display = singleClient ? 'none' : '';
+            if (clientLabel) {
+                clientLabel.style.display = singleClient ? 'none' : '';
+            }
+
             currentClient = clientSelect.value || clients[0] || null;
             if (currentClient) {
                 clientTitle.textContent = currentClient;
