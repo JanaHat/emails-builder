@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import fs from 'fs';
 import path from 'path';
 import { config, getClientConfig, getCampaignConfig } from './config.js';
 import {
@@ -198,7 +199,7 @@ class EmailBuilder {
           }
           
           // Ensure output directory exists
-          const outputDir = path.join(this.getOutputDirectory(campaignName), variation);
+          const outputDir = path.join(this.getOutputDirectory(campaignName), language);
           ensureDirectoryExists(outputDir);
           
           const formatMode = config.build.htmlFormat || 'none';
@@ -209,7 +210,7 @@ class EmailBuilder {
               : html;
 
           // Write HTML file
-          const outputFile = path.join(outputDir, `${language}.${config.build.outputFormat}`);
+          const outputFile = path.join(outputDir, `${variation}.${config.build.outputFormat}`);
           const writeSuccess = writeFileSync(outputFile, formattedHtml);
           
           if (writeSuccess) {
@@ -279,7 +280,154 @@ class EmailBuilder {
       allResults.push(...results);
     }
 
+    await this.cleanStaleOutputs(campaignName, templates);
+    this.cleanUnsupportedLanguageOutputs(campaignName);
+
     return allResults;
+  }
+
+  /**
+   * Remove output files for unsupported languages
+   * @param {string} campaignName - Campaign name
+   */
+  cleanUnsupportedLanguageOutputs(campaignName) {
+    const supported = config.build.supportedLanguages;
+    if (!Array.isArray(supported) || supported.length === 0) return;
+
+    const campaignOutputDir = this.getOutputDirectory(campaignName);
+    if (!fs.existsSync(campaignOutputDir)) return;
+
+    const languages = getDirectories(campaignOutputDir);
+    languages.forEach((language) => {
+      if (!supported.includes(language)) {
+        const languageDir = path.join(campaignOutputDir, language);
+        this.removeDirectory(languageDir);
+        logger.info(`Removed unsupported language output: ${languageDir}`);
+      }
+    });
+  }
+
+  /**
+   * Remove output files for deleted templates/variations
+   * @param {string} campaignName - Campaign name
+   * @param {Array<string>} templates - Template folder names
+   */
+  async cleanStaleOutputs(campaignName, templates) {
+    const expectedOutputs = await this.collectExpectedOutputs(campaignName, templates);
+    const campaignOutputDir = this.getOutputDirectory(campaignName);
+    if (!fs.existsSync(campaignOutputDir)) return;
+
+    const filesToCheck = this.getFilesRecursive(campaignOutputDir);
+    filesToCheck.forEach((filePath) => {
+      if (path.extname(filePath) !== `.${config.build.outputFormat}`) return;
+      if (!expectedOutputs.has(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+          logger.info(`Removed stale output: ${filePath}`);
+        } catch (error) {
+          logger.warn(`Failed to remove ${filePath}: ${error.message}`);
+        }
+      }
+    });
+
+    this.pruneEmptyDirs(campaignOutputDir);
+  }
+
+  /**
+   * Build a set of expected output files from data.js
+   */
+  async collectExpectedOutputs(campaignName, templates) {
+    const expected = new Set();
+    const templatesDir = this.getTemplatesDirectory(campaignName);
+    const supported = config.build.supportedLanguages;
+    const outputFormat = config.build.outputFormat;
+
+    for (const templateName of templates) {
+      const templatePath = path.join(templatesDir, templateName);
+      const dataFile = path.join(templatePath, config.build.templateFileNames.data);
+
+      if (!fileExists(dataFile)) continue;
+
+      const dataModule = await safeImport(dataFile);
+      const emailData = dataModule?.emailData;
+      if (!Array.isArray(emailData)) continue;
+
+      for (const { variation, localizations } of emailData) {
+        if (!variation || !localizations) continue;
+        for (const language of Object.keys(localizations)) {
+          if (Array.isArray(supported) && supported.length > 0 && !supported.includes(language)) {
+            continue;
+          }
+          const outputFile = path.join(
+            this.getOutputDirectory(campaignName),
+            language,
+            `${variation}.${outputFormat}`
+          );
+          expected.add(outputFile);
+        }
+      }
+    }
+
+    return expected;
+  }
+
+  /**
+   * Recursively list files in a directory
+   */
+  getFilesRecursive(dirPath) {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const files = [];
+
+    entries.forEach((entry) => {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...this.getFilesRecursive(fullPath));
+      } else {
+        files.push(fullPath);
+      }
+    });
+
+    return files;
+  }
+
+  /**
+   * Remove empty directories under a path
+   */
+  pruneEmptyDirs(dirPath) {
+    if (!fs.existsSync(dirPath)) return;
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+    entries.forEach((entry) => {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        this.pruneEmptyDirs(fullPath);
+      }
+    });
+
+    const remaining = fs.readdirSync(dirPath);
+    if (remaining.length === 0) {
+      try {
+        fs.rmdirSync(dirPath);
+      } catch (error) {
+        logger.warn(`Failed to remove empty dir ${dirPath}: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * Remove a directory and all its contents
+   */
+  removeDirectory(dirPath) {
+    if (!fs.existsSync(dirPath)) return;
+    fs.readdirSync(dirPath, { withFileTypes: true }).forEach((entry) => {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        this.removeDirectory(fullPath);
+      } else {
+        fs.unlinkSync(fullPath);
+      }
+    });
+    fs.rmdirSync(dirPath);
   }
 
   /**

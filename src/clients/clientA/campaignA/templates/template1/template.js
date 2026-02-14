@@ -1,11 +1,60 @@
+import {
+    Button,
+    ContentSection,
+    TwoColumnLayout,
+    HeroSection,
+    Footer,
+    EmailLayout
+} from '../../../../../shared/components/index.js';
+
 export const generateEmail = ({
-    subject,
+    previewText,
+    heroTitle,
+    heroSubtitle,
     greeting,
     paragraph1,
     paragraph2,
     paragraph3,
-    cta,
-    backgroundColor 
+    extraParagraph,
+    highlightsLeftTitle,
+    highlightsLeftItems,
+    highlightsRightTitle,
+    highlightsRightItems,
+    ctaPrimaryText,
+    ctaPrimaryHref,
+    ctaSecondaryText,
+    ctaSecondaryHref,
+    layoutBackgroundColor,
+    layoutWidth,
+    fontFamily,
+    heroBackgroundColor,
+    heroTextColor,
+    heroPadding,
+    heroBackgroundImage,
+    sectionBackgroundColor,
+    sectionPadding,
+    highlightBackgroundColor,
+    highlightPadding,
+    headingColor,
+    textColor,
+    minorHeadingColor,
+    listColor,
+    buttonPrimaryBackground,
+    buttonSecondaryBackground,
+    buttonTextColor,
+    buttonRadius,
+    buttonPadding,
+    buttonFontSize,
+    buttonFontWeight,
+    buttonAlign,
+    footerBackgroundColor,
+    footerTextColor,
+    footerPadding,
+    footerFontSize,
+    companyName,
+    companyAddress,
+    unsubscribeUrl,
+    socialLinks
 }) => {
     // Helper function to escape HTML content
     const escapeHtml = (text) => {
@@ -20,31 +69,99 @@ export const generateEmail = ({
             .replace(/"/g, '&quot;');
     };
 
-    return `
-<mjml>
-    <mj-head>
-        <mj-preview>${escapeHtml(subject)}</mj-preview>
-    </mj-head>
-    <mj-body>
-        <mj-section background-color="${backgroundColor}">
-            <mj-column>
-                <mj-image src="/assets/plant.webp" alt="Header Image" width="600px" />
-            </mj-column>
-        </mj-section>
-        <mj-section background-color="${backgroundColor}" padding="20px 25px">
-            <mj-column>
-                ${greeting ? `<mj-text font-size="20px" color="#333333">${escapeHtml(greeting)}</mj-text>` : ''}
-                ${paragraph1 ? `<mj-text font-size="16px" color="#666666">${escapeHtml(paragraph1)}</mj-text>` : ''}
-                ${paragraph2 ? `<mj-text font-size="16px" color="#666666">${escapeHtml(paragraph2)}</mj-text>` : ''}
-                ${paragraph3 ? `<mj-text font-size="16px" color="#666666">${escapeHtml(paragraph3)}</mj-text>` : ''}
-                ${cta ? `
-                <mj-button href="#" background-color="#28A745" align="left">
-                    ${escapeHtml(cta)}
-                </mj-button>
-                ` : ''}
-            </mj-column>
-        </mj-section>
-    </mj-body>
-</mjml>
-`;
+    const hero = HeroSection({
+        title: escapeHtml(heroTitle || ''),
+        subtitle: escapeHtml(heroSubtitle || ''),
+        backgroundColor: heroBackgroundColor,
+        backgroundImage: heroBackgroundImage || '',
+        textColor: heroTextColor,
+        padding: heroPadding
+    });
+
+    const intro = ContentSection({
+        backgroundColor: sectionBackgroundColor,
+        padding: sectionPadding,
+        children: `
+            ${greeting ? `<mj-text font-size="20px" color="${headingColor}" font-weight="600">${escapeHtml(greeting)}</mj-text>` : ''}
+            ${paragraph1 ? `<mj-text font-size="16px" color="${textColor}">${escapeHtml(paragraph1)}</mj-text>` : ''}
+            ${paragraph2 ? `<mj-text font-size="16px" color="${textColor}">${escapeHtml(paragraph2)}</mj-text>` : ''}
+            ${paragraph3 ? `<mj-text font-size="16px" color="${textColor}">${escapeHtml(paragraph3)}</mj-text>` : ''}
+            ${extraParagraph ? `<mj-text font-size="16px" color="${textColor}">${escapeHtml(extraParagraph)}</mj-text>` : ''}
+        `
+    });
+
+    const highlights = TwoColumnLayout({
+        backgroundColor: highlightBackgroundColor,
+        padding: highlightPadding,
+        leftContent: `
+            ${highlightsLeftTitle ? `<mj-text font-size="14px" color="${minorHeadingColor}" font-weight="600">${escapeHtml(highlightsLeftTitle)}</mj-text>` : ''}
+            ${Array.isArray(highlightsLeftItems) && highlightsLeftItems.length > 0 ? `
+            <mj-text font-size="14px" color="${listColor}">
+                ${highlightsLeftItems.map(item => `• ${escapeHtml(item)}`).join('<br/>')}
+            </mj-text>
+            ` : ''}
+        `,
+        rightContent: `
+            ${highlightsRightTitle ? `<mj-text font-size="14px" color="${minorHeadingColor}" font-weight="600">${escapeHtml(highlightsRightTitle)}</mj-text>` : ''}
+            ${Array.isArray(highlightsRightItems) && highlightsRightItems.length > 0 ? `
+            <mj-text font-size="14px" color="${listColor}">
+                ${highlightsRightItems.map(item => `• ${escapeHtml(item)}`).join('<br/>')}
+            </mj-text>
+            ` : ''}
+        `
+    });
+
+    const callToAction = ContentSection({
+        backgroundColor: sectionBackgroundColor,
+        padding: sectionPadding,
+        children: `
+            ${ctaPrimaryText ? Button({
+                href: ctaPrimaryHref || '#',
+                text: escapeHtml(ctaPrimaryText),
+                backgroundColor: buttonPrimaryBackground,
+                textColor: buttonTextColor,
+                borderRadius: buttonRadius,
+                padding: buttonPadding,
+                fontSize: buttonFontSize,
+                fontWeight: buttonFontWeight,
+                align: buttonAlign
+            }) : ''}
+            ${ctaSecondaryText ? Button({
+                href: ctaSecondaryHref || '#',
+                text: escapeHtml(ctaSecondaryText),
+                backgroundColor: buttonSecondaryBackground,
+                textColor: buttonTextColor,
+                borderRadius: buttonRadius,
+                padding: buttonPadding,
+                fontSize: buttonFontSize,
+                fontWeight: buttonFontWeight,
+                align: buttonAlign
+            }) : ''}
+        `
+    });
+
+    const footer = Footer({
+        companyName: companyName || '',
+        companyAddress: companyAddress || '',
+        unsubscribeUrl: unsubscribeUrl || '#',
+        socialLinks: Array.isArray(socialLinks) ? socialLinks : [],
+        backgroundColor: footerBackgroundColor,
+        textColor: footerTextColor,
+        padding: footerPadding,
+        fontSize: footerFontSize
+    });
+
+    return EmailLayout({
+        preview: escapeHtml(previewText || ''),
+        backgroundColor: layoutBackgroundColor,
+        width: layoutWidth,
+        fontFamily,
+        children: `
+            ${hero}
+            ${intro}
+            ${highlights}
+            ${callToAction}
+            ${footer}
+        `
+    });
 };
