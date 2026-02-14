@@ -8,27 +8,27 @@ body {
     align-items: center;
     margin: 0;
     height: 100%;
-    --sidebar-bg: #071F4C;
-    --sidebar-border: #1D2F59;
-    --section-accent-bg: #0183FF;
-    --divider-border: #1D2F59;
-    --list-border: #1D2F59;
-    --topbar-bg: #071F4C;
-    --topbar-border: #071F4C;
+    --sidebar-bg: #0b2846;
+    --sidebar-border: #313e5c;
+    --section-accent-bg: #103a68;
+    --divider-border: #25385b;
+    --list-border: #25385b;
+    --topbar-bg: #0b2846;
+    --topbar-border: #25385b;
     --action-bg: #c7e4ff;
     --screen-bg: #c7e4ff;
     --screen-active-bg: #9BCEFF;
-    --active-email-bg: #2c52ab;
+    --active-email-bg: #2762a1;
 }
 
 body[data-client="clientB"] {
-    --sidebar-bg: #0a414e;
+    --sidebar-bg: #083640;
     --sidebar-border: #0e6e83;
-    --section-accent-bg: #0e6e83;
-    --divider-border: #0e6e83;
-    --list-border: #0e6e83;
-    --topbar-bg: #0a414e;
-    --topbar-border: #0e6e83;
+    --section-accent-bg: #21606f;
+    --divider-border: #175f70;
+    --list-border: #175f70;
+    --topbar-bg: #083640;
+    --topbar-border: #175f70;
     --action-bg: #abeaf8;
     --screen-bg: #abeaf8;
     --screen-active-bg: #65bbce;
@@ -46,6 +46,11 @@ aside {
     border-right: 1px solid var(--sidebar-border);
     padding: 20px;
     background-color: var(--sidebar-bg);
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 h1, h2 {
@@ -55,11 +60,10 @@ h1, h2 {
 }
 
 .client-label {
-    color: #c7e4ff;
+    color: white;
     display: block;
     margin: 10px 10px 6px;
     font-size: 12px;
-    text-transform: uppercase;
     letter-spacing: 0.6px;
 }
 
@@ -68,9 +72,9 @@ h1, h2 {
     margin: 0 10px 16px;
     padding: 8px 10px;
     border-radius: 4px;
-    border: 1px solid #a2a8af;
+    border: 1px solid #a4a4a6;
     background: transparent;
-    color: #e6f1ff;
+    color: white;
 }
 
 h3 {
@@ -148,6 +152,10 @@ hr {
     background-color: var(--active-email-bg);
 }
 
+.side-panel-emails-btns:hover {
+    background-color: var(--active-email-bg);
+}
+
 input[type='checkbox'] {
     cursor: pointer;
 }
@@ -164,6 +172,9 @@ ul {
     justify-content: space-between;
     align-items: center;
     background-color: var(--topbar-bg);
+    position: sticky;
+    top: 0;
+    z-index: 5;
 }
 
 .export-container {
@@ -187,6 +198,11 @@ ul {
     margin-left: 5px;
 }
 
+#export-pdf:hover,
+#export-png:hover {
+    background-color: var(--screen-active-bg);
+}
+
 .screen-view-btn-wrapper {
     margin-right: 15px;
 }
@@ -203,16 +219,22 @@ ul {
     cursor: pointer;
 }
 
+.screen-view-btn:hover {
+    background-color: var(--screen-active-bg);
+}
+
 .screen-view-btn.active-screen {
     background-color: var(--screen-active-bg);
 }
 
 .email-wrapper {
-    margin: 0 auto;
+    margin: 20px auto;
     width: 600px;
     border: 0;
     height: auto;
     overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+    background: #ffffff;
 }
 
 .email-side-wrapper {
@@ -223,7 +245,6 @@ ul {
 
 #email-preview {
     height: auto;
-    padding: 20px 0;
     overflow: hidden;
     position: relative;
 }

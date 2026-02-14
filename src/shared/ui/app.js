@@ -222,7 +222,7 @@ async function loadEmails(campaign, language) {
                 <button class="side-panel-emails-btns" data-campaign="${campaign}" data-language="${language}" data-email="${email}">
                     <img src="/assets/html.png" alt="Email HTML"/> ${email}
                 </button>
-                <input type="checkbox" class="email-checkbox" value="${email}">
+                <input type="checkbox" class="email-checkbox" value="${email}" title="Select for export" aria-label="Select for export">
             </li>
         `).join('');
 
